@@ -37,7 +37,7 @@ export default function AuditPage() {
       ) : events.isError ? (
         <EmptyState title="Could not load events" body="Try again in a moment." />
       ) : events.data && events.data.length > 0 ? (
-        <div className="overflow-x-auto border border-line">
+        <div className="relative overflow-x-auto border border-line">
           <table className="w-full min-w-[40rem] text-left text-[13px]">
             <thead className="border-b border-line text-faint">
               <tr>

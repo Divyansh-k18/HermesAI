@@ -35,9 +35,28 @@ Results: `/healthz` returned ok, `/readyz` returned ready, and `POST /api/v1/aut
 - `tsc --noEmit`: no errors. `eslint src`: no findings. `next build`: succeeded.
 - Production server (`next start`) plus uvicorn, checked over HTTP: `/login`, `/register`, `/onboarding`, and `/invite` returned 200. Registration through the `/api` proxy returned 201. Creating an organization returned role owner. Listing members returned one member.
 
+## Browser tests (Playwright, Chromium)
+Command: `npm run e2e` from `web/`. It starts the backend on a fresh SQLite database, builds and starts the web app, then runs 5 tests.
+
+Result: **5 passed**.
+- Signed-out visitors are redirected to login.
+- Registration shows password policy feedback before submitting.
+- A wrong password shows a generic error.
+- Full flow across two users: register, create organization, invite, accept as a second user, member sees no invite form and no audit access, owner changes role, owner removes member, removed member loses access immediately, audit log shows the events.
+- Mobile (390px): login and team pages render, no horizontal page scroll, sign out returns to login.
+
+Defects found by this run and fixed:
+- Hidden table header cells escaped the scroll container and widened the page by 159px on mobile.
+- The mobile members table hid the role column and actions. Email now stacks under the name on small screens.
+- "Sign out" wrapped onto two lines in the header.
+
+Screenshots were reviewed at 1280px and 390px for overview, team, and login.
+
 ## Not performed
-- Rendering the UI in a browser, screenshots, or Playwright tests. Layout, spacing, and responsive behavior are unreviewed.
+- Visual review of register, invite, onboarding, and audit pages. Only overview, team, and login were inspected.
+- Tablet widths, light theme, keyboard-only navigation checks, and automated accessibility scans.
 - Frontend unit tests.
+- Firefox and Safari.
 - PostgreSQL migration, backup, or restore.
 - Security scanning beyond ruff's bandit-style rules.
 - Any provider integration. No HubSpot, ERPNext, Gmail, or other sandbox was connected.

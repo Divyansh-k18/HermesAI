@@ -35,7 +35,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex h-12 max-w-6xl items-center gap-4 px-4 sm:px-6">
-          <Wordmark />
+          <Wordmark compact />
           <span className="text-faint" aria-hidden>
             /
           </span>

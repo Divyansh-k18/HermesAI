@@ -120,12 +120,12 @@ export default function TeamPage() {
             <Skeleton className="h-10" />
           </div>
         ) : (
-          <div className="overflow-x-auto border border-line">
-            <table className="w-full min-w-[34rem] text-left text-[13px]">
+          <div className="relative overflow-x-auto border border-line">
+            <table className="w-full text-left text-[13px]">
               <thead className="border-b border-line text-faint">
                 <tr>
                   <th className="px-3 py-2 font-normal">Name</th>
-                  <th className="px-3 py-2 font-normal">Email</th>
+                  <th className="hidden px-3 py-2 font-normal sm:table-cell">Email</th>
                   <th className="px-3 py-2 font-normal">Role</th>
                   <th className="px-3 py-2 text-right font-normal">
                     <span className="sr-only">Actions</span>
@@ -141,8 +141,13 @@ export default function TeamPage() {
                       <td className="px-3 py-2.5">
                         {member.full_name}
                         {isSelf && <span className="ml-2 text-faint">you</span>}
+                        <span className="mt-0.5 block break-all font-mono text-[11px] text-muted sm:hidden">
+                          {member.email}
+                        </span>
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-[12px] text-muted">{member.email}</td>
+                      <td className="hidden px-3 py-2.5 font-mono text-[12px] text-muted sm:table-cell">
+                        {member.email}
+                      </td>
                       <td className="px-3 py-2.5">
                         {editable ? (
                           <select

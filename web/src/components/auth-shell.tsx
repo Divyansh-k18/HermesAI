@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /** Wordmark: a node-and-edge glyph beside the name. Drawn in SVG so it inherits text color. */
-export function Wordmark() {
+export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="inline-flex items-center gap-2.5" aria-label="Hermes AI home">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
@@ -12,7 +12,7 @@ export function Wordmark() {
         <circle cx="11" cy="19" r="1.6" stroke="currentColor" strokeWidth="1.2" />
         <path d="M5 6l4.4 3.4M17 6l-4.4 3.4M11 14v3.4" stroke="currentColor" strokeWidth="1.2" />
       </svg>
-      <span className="text-[15px] font-semibold tracking-tight">Hermes</span>
+      <span className={`text-[15px] font-semibold tracking-tight ${compact ? "hidden sm:inline" : ""}`}>Hermes</span>
     </Link>
   );
 }
