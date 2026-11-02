@@ -52,6 +52,55 @@ export const SAMPLE_WORKFLOW: WorkflowDefinition = {
   ],
 };
 
+export const SAMPLE_EMAIL_WORKFLOW_NAME = "Email order approval (sample)";
+
+/**
+ * Orders that arrive by email. A customer writes lines such as "Total: 75,000" and "Customer: Asha Traders";
+ * Hermes reads them as email.fields.total and email.fields.customer. Orders above ₹50,000 wait for a manager.
+ */
+export const SAMPLE_EMAIL_WORKFLOW: WorkflowDefinition = {
+  nodes: [
+    { id: "trigger", type: "trigger", label: "Order email received", position: { x: 0, y: 140 }, config: { event: "email.received" } },
+    {
+      id: "capture",
+      type: "transformation",
+      label: "Read order from email",
+      position: { x: 280, y: 140 },
+      config: {
+        mappings: [
+          { source: "email.fields.total", target: "order.total" },
+          { source: "email.from", target: "order.customer_email" },
+        ],
+      },
+    },
+    {
+      id: "check",
+      type: "condition",
+      label: "Order over ₹50,000?",
+      position: { x: 560, y: 140 },
+      config: { field: "order.total", operator: "gt", value: 50000 },
+    },
+    {
+      id: "approval",
+      type: "approval",
+      label: "Manager approval",
+      position: { x: 840, y: 40 },
+      config: { approver_role: "admin", title: "Approve emailed order over ₹50,000" },
+    },
+    { id: "done", type: "end", label: "Approved", position: { x: 1120, y: 0 }, config: {} },
+    { id: "rejected", type: "end", label: "Rejected", position: { x: 1120, y: 150 }, config: {} },
+    { id: "auto", type: "end", label: "Auto-approved (small order)", position: { x: 840, y: 280 }, config: {} },
+  ],
+  edges: [
+    { id: "e1", source: "trigger", target: "capture", source_handle: null, label: "" },
+    { id: "e2", source: "capture", target: "check", source_handle: null, label: "" },
+    { id: "e3", source: "check", target: "approval", source_handle: "true", label: "true" },
+    { id: "e4", source: "check", target: "auto", source_handle: "false", label: "false" },
+    { id: "e5", source: "approval", target: "done", source_handle: "approved", label: "approved" },
+    { id: "e6", source: "approval", target: "rejected", source_handle: "rejected", label: "rejected" },
+  ],
+};
+
 /** Builds an example run payload from the fields a workflow reads, so people start from something valid. */
 export function payloadTemplate(definition: WorkflowDefinition): Record<string, unknown> {
   const result: Record<string, unknown> = {};

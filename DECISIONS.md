@@ -71,3 +71,9 @@ An HTTP step refers to a connection by id. The connection holds an encrypted hea
 
 ## D-024: Outbound requests are deny-by-default
 Steps may call only HTTPS URLs whose every resolved address is public. Redirects are not followed, responses are capped at 1 MB, and requests time out after 10 seconds. Only methods that are safe to repeat are retried. Writes carry an Idempotency-Key so the receiving system can recognize a repeat.
+
+## D-025: Email orders read over IMAP, read-only, from "now"
+Hermes polls the mailbox with IMAP instead of needing an inbound-email provider, so it works with an ordinary Gmail account and an app password. It opens the folder read-only and fetches with BODY.PEEK, so nothing in the mailbox changes. Connecting records the newest message as the starting point, so existing mail never becomes orders. Each email's Message-ID becomes the run's idempotency key, so a message seen twice starts one run.
+
+## D-026: Structured order lines instead of guessing
+Without an AI model, Hermes reads only explicit "Field: value" lines and converts amounts like "₹75,000" to numbers. Conditions then fail closed when a field is missing (D-021). This is predictable and easy to explain, and it leaves free-form understanding to a future AI step.

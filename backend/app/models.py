@@ -426,3 +426,34 @@ class Connection(Base):
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+
+
+class EmailInbox(Base):
+    """A mailbox Hermes reads over IMAP. Each new email starts one run of the workflow's active version."""
+
+    __tablename__ = "email_inboxes"
+    __table_args__ = (UniqueConstraint("workflow_id", name="uq_email_inbox_workflow"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    workflow_id: Mapped[str] = mapped_column(String(36), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False)
+    imap_host: Mapped[str] = mapped_column(String(255), nullable=False)
+    imap_port: Mapped[int] = mapped_column(Integer, default=993, nullable=False)
+    username: Mapped[str] = mapped_column(String(320), nullable=False)
+    # The mailbox password (for Gmail, an app password), encrypted. Never returned by the API.
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    folder: Mapped[str] = mapped_column(String(100), default="INBOX", nullable=False)
+    # Comma-separated addresses or domains. Empty means anyone may send orders.
+    allowed_senders: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # IMAP bookkeeping: only messages after last_uid are read. A new uid_validity means the folder was rebuilt.
+    uid_validity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_uid: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    runs_started: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)

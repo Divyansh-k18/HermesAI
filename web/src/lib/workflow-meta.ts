@@ -44,6 +44,7 @@ export const NODE_META: Record<NodeKind, NodeMeta> = {
         options: [
           { value: "hubspot.order.created", label: "HubSpot: order created" },
           { value: "hubspot.deal.created", label: "HubSpot: deal created" },
+          { value: "email.received", label: "Email: order received" },
           { value: "manual", label: "Manual start" },
         ],
       },

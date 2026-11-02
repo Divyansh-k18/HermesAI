@@ -189,6 +189,25 @@ export interface ApprovalItem {
   can_decide: boolean;
 }
 
+export interface EmailInboxInfo {
+  enabled: boolean;
+  imap_host: string | null;
+  username: string | null;
+  folder: string | null;
+  allowed_senders: string | null;
+  last_checked_at: string | null;
+  last_error: string | null;
+  runs_started: number;
+}
+
+export interface EmailCheckResult {
+  started: number;
+  ignored: number;
+  duplicates: number;
+  error: string | null;
+  run_ids: string[];
+}
+
 export interface ConnectionItem {
   id: string;
   name: string;
@@ -375,6 +394,17 @@ export const api = {
       request<WebhookSecret>("POST", `/orgs/${orgId}/workflows/${workflowId}/webhook`),
     deleteWebhook: (orgId: string, workflowId: string) =>
       request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}/webhook`),
+    emailInbox: (orgId: string, workflowId: string) =>
+      request<EmailInboxInfo>("GET", `/orgs/${orgId}/workflows/${workflowId}/email-inbox`),
+    connectEmailInbox: (
+      orgId: string,
+      workflowId: string,
+      input: { imap_host: string; username: string; password?: string; folder?: string; allowed_senders?: string },
+    ) => request<EmailInboxInfo>("PUT", `/orgs/${orgId}/workflows/${workflowId}/email-inbox`, input),
+    checkEmailInbox: (orgId: string, workflowId: string) =>
+      request<EmailCheckResult>("POST", `/orgs/${orgId}/workflows/${workflowId}/email-inbox/check`),
+    disconnectEmailInbox: (orgId: string, workflowId: string) =>
+      request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}/email-inbox`),
     webhookEvents: (orgId: string, workflowId: string) =>
       request<WebhookEventItem[]>("GET", `/orgs/${orgId}/workflows/${workflowId}/webhook/events`),
     run: (orgId: string, workflowId: string, input: { payload: Record<string, unknown>; idempotency_key?: string }) =>

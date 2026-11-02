@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Wordmark } from "@/components/auth-shell";
+import { HeroVisual } from "@/components/hero-visual";
 
 /**
  * An original diagram of what Hermes does: a trigger, a decision, a person, and a recorded outcome.
@@ -111,26 +112,31 @@ export function Landing() {
       </header>
 
       <main className="flex-1">
-        <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 sm:px-6 sm:pt-24">
-          <p className="t-label">Workflow automation with human accountability</p>
-          <h1 className="t-display mt-5 max-w-3xl">Intelligence in motion.</h1>
-          <p className="mt-6 max-w-xl text-[16px] leading-relaxed text-muted">
-            Design a workflow, publish it, and run it. When a decision needs a person, Hermes pauses, asks the right
-            role, and continues only on approval. Every step is recorded.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/register"
-              className="rounded-md bg-accent px-4 py-2 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-strong"
-            >
-              Create an account
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-md border border-line-strong px-4 py-2 text-[14px] transition-colors hover:bg-surface-2"
-            >
-              Sign in
-            </Link>
+        <section className="mx-auto max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pt-16">
+          <div className="grid items-center gap-6 lg:grid-cols-[1.05fr_1fr]">
+            <div>
+              <p className="t-label">Workflow automation with human accountability</p>
+              <h1 className="t-display mt-5 max-w-3xl">Intelligence in motion.</h1>
+              <p className="mt-6 max-w-xl text-[16px] leading-relaxed text-muted">
+                Design a workflow, publish it, and run it. When a decision needs a person, Hermes pauses, asks the
+                right role, and continues only on approval. Every step is recorded.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/register"
+                  className="rounded-md bg-accent px-4 py-2 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-strong"
+                >
+                  Create an account
+                </Link>
+                <Link
+                  href="/login"
+                  className="rounded-md border border-line-strong px-4 py-2 text-[14px] transition-colors hover:bg-surface-2"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </div>
+            <HeroVisual />
           </div>
 
           {/* The diagram keeps a readable size and scrolls sideways inside its own box on small screens. */}

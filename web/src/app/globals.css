@@ -215,3 +215,32 @@ body {
   stroke-dasharray: 4 6;
   animation: flow-dash 1.4s linear infinite;
 }
+
+/* Run graph: the step a run is waiting on breathes gently. Reduced-motion users see a steady border. */
+@keyframes run-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(217, 164, 65, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.18);
+  }
+}
+
+.run-pulse {
+  animation: run-pulse 2.2s ease-in-out infinite;
+}
+
+/* Brief highlight when a step is chosen from the run graph. */
+@keyframes step-flash {
+  from {
+    background: var(--accent-soft);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.step-flash {
+  animation: step-flash 1.4s ease-out;
+}

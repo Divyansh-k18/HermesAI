@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "@/components/workflow/inspector";
 import { NodeCard } from "@/components/workflow/node-card";
 import { RunDialog } from "@/components/workflow/run-dialog";
+import { EmailInboxPanel } from "@/components/workflow/email-panel";
 import { WebhookPanel } from "@/components/workflow/webhook-panel";
 import { payloadTemplate } from "@/lib/sample-workflow";
 import { Badge, Button, EmptyState, Skeleton } from "@/components/ui";
@@ -868,6 +869,7 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
                 </p>
               </section>
 
+              {canPublish && <EmailInboxPanel orgId={orgId} workflowId={workflowId} />}
               {canPublish && <WebhookPanel orgId={orgId} workflowId={workflowId} />}
             </div>
           )}

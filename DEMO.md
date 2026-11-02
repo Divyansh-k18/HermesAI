@@ -42,6 +42,23 @@ Say: "The run is parked in the database. Restart the server and it is still here
 
 Say: "A rejected order can never be treated as approved, by design."
 
+## Optional: an order by email (1 minute)
+
+Set up beforehand: a Gmail address with IMAP on and an app password (see README, "Taking orders by email").
+
+1. In **Workflows**, click **Load email order sample**.
+2. In the builder's right panel, under **Email orders**, click **Connect mailbox**, enter the Gmail address and app password, and click **Save and test**.
+3. From your phone, email that address:
+   ```
+   Customer: Asha Traders
+   Total: 75,000
+   ```
+4. Click **Check now**, then **Open the run**. "Triggered by" shows **email**, the order is read from the email, and it waits for a manager.
+
+Say: "A customer just ordered by email. Hermes read the order, saw it was over the limit, and is waiting for a manager. Nothing was guessed: the fields come straight from the email."
+
+If the venue's network blocks mail servers, use **Run** with this data instead: `{"email": {"from": "asha@customer.com", "fields": {"total": 82000, "customer": "Asha Traders"}}}`.
+
 ## Optional: an event from another system (45 seconds)
 
 1. In the builder's right panel (click empty canvas first), click **Create webhook**.

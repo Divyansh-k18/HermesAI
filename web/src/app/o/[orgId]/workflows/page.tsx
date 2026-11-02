@@ -7,7 +7,12 @@ import { useState } from "react";
 
 import { Badge, Button, EmptyState, Field, FormError, Skeleton } from "@/components/ui";
 import { ApiError, api, type WorkflowSummary } from "@/lib/api";
-import { SAMPLE_WORKFLOW, SAMPLE_WORKFLOW_NAME } from "@/lib/sample-workflow";
+import {
+  SAMPLE_EMAIL_WORKFLOW,
+  SAMPLE_EMAIL_WORKFLOW_NAME,
+  SAMPLE_WORKFLOW,
+  SAMPLE_WORKFLOW_NAME,
+} from "@/lib/sample-workflow";
 
 function StatusBadge({ workflow }: { workflow: WorkflowSummary }) {
   if (workflow.active_version_number !== null) {
@@ -42,13 +47,22 @@ export default function WorkflowLibraryPage() {
 
   // Creates, publishes, and activates the sample so a run and an approval can be tried right away.
   const loadSample = useMutation({
-    mutationFn: async () => {
-      const created = await api.workflows.create(orgId, {
-        name: SAMPLE_WORKFLOW_NAME,
-        description: "Orders above ₹50,000 wait for a manager's approval.",
-      });
+    mutationFn: async (kind: "sales" | "email") => {
+      const sample =
+        kind === "email"
+          ? {
+              name: SAMPLE_EMAIL_WORKFLOW_NAME,
+              description: "Orders that arrive by email. Above ₹50,000 they wait for a manager.",
+              definition: SAMPLE_EMAIL_WORKFLOW,
+            }
+          : {
+              name: SAMPLE_WORKFLOW_NAME,
+              description: "Orders above ₹50,000 wait for a manager's approval.",
+              definition: SAMPLE_WORKFLOW,
+            };
+      const created = await api.workflows.create(orgId, { name: sample.name, description: sample.description });
       const id = created.workflow.id;
-      const saved = await api.workflows.saveDraft(orgId, id, { definition: SAMPLE_WORKFLOW, base_revision: 1 });
+      const saved = await api.workflows.saveDraft(orgId, id, { definition: sample.definition, base_revision: 1 });
       if (canPublish) {
         await api.workflows.publish(orgId, id, saved.version.revision);
         await api.workflows.activate(orgId, id, saved.version.version_number);
@@ -93,14 +107,17 @@ export default function WorkflowLibraryPage() {
       {canWrite && (
         <div className="flex flex-wrap items-center gap-3 border border-line px-4 py-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium">Try the sample sales-order workflow</p>
+            <p className="text-[13px] font-medium">Try a sample order workflow</p>
             <p className="text-[12px] text-muted">
-              Orders above ₹50,000 pause for a manager&apos;s approval.
-              {canPublish ? " It is published and activated for you." : " It is saved as a draft for an admin to publish."}
+              Orders above ₹50,000 pause for a manager&apos;s approval. The email version starts from order emails.
+              {canPublish ? " Samples are published and activated for you." : " Samples are saved as drafts for an admin to publish."}
             </p>
           </div>
-          <Button variant="secondary" onClick={() => loadSample.mutate()} loading={loadSample.isPending}>
+          <Button variant="secondary" onClick={() => loadSample.mutate("sales")} loading={loadSample.isPending && loadSample.variables === "sales"}>
             Load sample
+          </Button>
+          <Button variant="secondary" onClick={() => loadSample.mutate("email")} loading={loadSample.isPending && loadSample.variables === "email"}>
+            Load email order sample
           </Button>
         </div>
       )}

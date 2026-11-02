@@ -79,3 +79,13 @@ When the API was not running or its database had no tables, the home page and si
 
 ## Resolved: "can't reach its server (HTTP 404)" when port 8000 is taken
 On a machine where another program already uses port 8000, the Hermes API cannot start there, and the other program answers the website's requests with 404. `run.py` now checks the port first and stops with instructions for using another port (`HERMES_PORT` for the API, `HERMES_API_URL` for the website). The error page explains the 404 case. Verified by holding a port with another process: `run.py` exits with code 1 and prints the alternative commands.
+
+## Email orders
+1. **Not yet tested against a live mailbox.** Tests use a fake mailbox with real email messages. The IMAP code uses Python's standard library and has not been run against Gmail or another provider from this machine. Treat the first live connection as the real test.
+2. **Order details must be in "Field: value" lines.** Free-form text such as "please send 5 boxes" is not understood. That needs the AI step, which is not built.
+3. **Checked once a minute** by the API's background loop, or on demand with Check now. Not instant.
+4. **Up to 20 new emails per check.** A burst larger than that is handled over the next checks.
+5. **Renumbered folders restart from the newest email.** If the mail server rebuilds a folder's numbering, Hermes starts again from the newest message so old mail never becomes orders. An email that arrived at that exact moment could be skipped. Message-IDs prevent repeats.
+6. **Anyone can email the address unless senders are restricted.** The panel warns about this. Approvals still apply to large orders.
+7. **Attachments are ignored.** Only the text (or HTML converted to text) is read.
+8. **Gmail needs an app password.** OAuth sign-in with Google is not built.

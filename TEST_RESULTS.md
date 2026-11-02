@@ -137,3 +137,17 @@ One full run had a single `read ECONNRESET` through the proxy during login. Afte
 
 ## Port conflict handling
 Browser tests: **17 passed**, including a new test that a 404 from the API address shows the "another program is using the port" explanation. `run.py` was checked against a port held by another process: it exits with code 1 and prints how to use another port.
+
+## UI upgrade and email orders
+
+Backend: **208 passed** (185 earlier plus 23 email-order tests). Lint and format checks pass.
+
+Email-order tests use a fake mailbox with real email messages built by Python's email library. They cover: "Field: value" parsing including ₹, Rs, commas, and decimals; HTML-only emails; allowed senders by address and domain; connecting verifies the sign-in and skips mail already in the box; a new email starting a run with the parsed fields; the same Message-ID never starting two runs; unknown senders ignored; mail left unread while the workflow is inactive and picked up after activation; a refused sign-in saving nothing; mailbox errors shown on later checks; the password encrypted and kept when other settings change; private mail servers refused; header-injection attempts in fields refused; permissions and isolation; disconnecting; the one-minute check interval; and a renumbered folder restarting from the newest email. That last test found a bug, which was fixed.
+
+Migration: the sixth migration went up, down, and up again on SQLite.
+
+Browser tests: **21 passed**. New: the run graph shows the waiting step, the unreached endings, and moves focus to a step's trace entry when clicked; the Ctrl+K command palette filters, navigates, and closes; the 3D hero renders (the test browser ran it in 3D mode) and loads without errors under reduced motion; the email order sample loads and the mailbox form reports a mail server that does not exist.
+
+Found by the full browser run and fixed: the new Search button made the phone-width header wider than the screen.
+
+Not done: a live mailbox. The IMAP code has not been run against Gmail from this machine.

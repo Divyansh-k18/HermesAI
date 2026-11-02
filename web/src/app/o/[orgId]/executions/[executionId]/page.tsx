@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { ApprovalPanel, Json } from "@/components/approval-panel";
+import { RunGraph } from "@/components/run-graph";
 import { Button, EmptyState, FormError, Skeleton } from "@/components/ui";
 import {
   ExecutionStatusBadge,
@@ -22,7 +23,7 @@ function StepItem({ step, last }: { step: StepRecord; last: boolean }) {
   const [open, setOpen] = useState(step.status === "failed");
   const hasOutput = Object.keys(step.output).length > 0;
   return (
-    <li className="relative flex gap-4 pb-6">
+    <li id={`step-${step.node_id}`} tabIndex={-1} className="relative flex gap-4 rounded-md pb-6 outline-none">
       {!last && <span aria-hidden className="absolute left-[7px] top-5 h-full w-px bg-line-strong" />}
       <span
         aria-hidden
@@ -88,6 +89,23 @@ export default function ExecutionDetailPage() {
     refetchInterval: (query) => (query.state.data && TERMINAL.includes(query.state.data.status) ? false : 3000),
     retry: false,
   });
+  // The run's own frozen version. Published versions never change, so it is cached for good.
+  const version = useQuery({
+    queryKey: ["version", orgId, run.data?.workflow_id, run.data?.version_number],
+    queryFn: () => api.workflows.version(orgId, run.data!.workflow_id, run.data!.version_number),
+    enabled: Boolean(run.data),
+    staleTime: Infinity,
+  });
+
+  const selectStep = (nodeId: string) => {
+    const target = document.getElementById(`step-${nodeId}`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.focus({ preventScroll: true });
+    target.classList.remove("step-flash");
+    void target.offsetWidth; // restart the highlight animation
+    target.classList.add("step-flash");
+  };
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["execution", orgId, executionId] });
@@ -167,6 +185,41 @@ export default function ExecutionDetailPage() {
           This run is waiting for an approval. Only owners and admins can see and decide it.
         </p>
       )}
+
+      <section aria-labelledby="path-heading">
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <h2 id="path-heading" className="t-label">
+            Path taken
+          </h2>
+          <ul className="flex flex-wrap gap-x-3 text-[11px] text-muted" aria-label="Legend">
+            <li className="flex items-center gap-1.5">
+              <span className="size-2 rounded-[2px] border border-success/70" /> done
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="size-2 rounded-[2px] border border-warning" /> waiting
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="size-2 rounded-[2px] border border-danger" /> failed
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="size-2 rounded-[2px] border border-line opacity-60" /> not reached
+            </li>
+          </ul>
+          <span className="text-[11px] text-faint">Select a step to see its details.</span>
+        </div>
+        {version.data ? (
+          <RunGraph
+            definition={version.data.definition}
+            steps={data.steps}
+            runStatus={data.status}
+            onSelectStep={selectStep}
+          />
+        ) : version.isError ? (
+          <p className="text-[13px] text-muted">The workflow graph for this run could not be loaded.</p>
+        ) : (
+          <Skeleton className="h-[340px]" />
+        )}
+      </section>
 
       <section aria-labelledby="trace-heading" className="grid gap-8 lg:grid-cols-[1fr_20rem]">
         <div>

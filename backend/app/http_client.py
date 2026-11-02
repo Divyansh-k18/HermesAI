@@ -67,6 +67,12 @@ def check_destination(url: str) -> str:
         raise OutboundError("The URL needs a host name.")
     if parsed.username or parsed.password:
         raise OutboundError("Do not put credentials in the URL. Use a connection instead.")
+    ensure_public_host(host)
+    return host
+
+
+def ensure_public_host(host: str) -> None:
+    """Refuse a host unless every address it resolves to is public. Shared by HTTP steps and mailboxes."""
     try:
         addresses = resolve_host(host)
     except (OSError, UnicodeError):
@@ -76,7 +82,6 @@ def check_destination(url: str) -> str:
     for address in addresses:
         if not ipaddress.ip_address(address.split("%")[0]).is_global:
             raise OutboundError(f"{host} resolves to a private or reserved address, so the request was blocked.")
-    return host
 
 
 def _decode(raw: bytes, content_type: str) -> Any:

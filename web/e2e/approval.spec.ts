@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 const PASSWORD = "Correct-Horse-42!";
 const unique = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+// The step trace lists only steps the run visited. The run graph above it shows every step.
+const trace = (page: Page) => page.getByRole("region", { name: "Step trace" });
 
 async function signUpWithOrg(page: Page, label: string) {
   const id = unique();
@@ -46,7 +48,11 @@ test("load the sample, run it, pause for approval, approve, then reject another 
   await expect(page).toHaveURL(/\/executions\/[0-9a-f-]+$/);
   await expect(page.getByText("waiting for approval").first()).toBeVisible();
   await expect(page.getByText("Approve order over ₹50,000")).toBeVisible();
-  await expect(page.getByText("Mark order approved")).toHaveCount(0);
+  await expect(trace(page).getByText("Mark order approved")).toHaveCount(0);
+  // The run graph draws the frozen version and marks where the run is waiting.
+  await expect(page.locator(".react-flow__node")).toHaveCount(8);
+  await expect(page.locator('[data-run-status="waiting"]')).toHaveCount(1);
+  await expect(page.locator('.react-flow__node[data-id="approval"] [data-run-status="waiting"]')).toHaveCount(1);
   await page.screenshot({ path: "e2e/screenshots/run-waiting.png", fullPage: true });
 
   // The pending badge appears on the Approvals tab.
@@ -55,8 +61,15 @@ test("load the sample, run it, pause for approval, approve, then reject another 
   await page.getByLabel("Comment (optional)").fill("Within budget");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("succeeded").first()).toBeVisible();
-  await expect(page.getByText("Mark order approved")).toBeVisible();
+  await expect(trace(page).getByText("Mark order approved")).toBeVisible();
   await expect(page.getByText(/approved by .*Within budget/)).toBeVisible();
+  // Only the two endings the run did not take stay unreached.
+  await expect(page.locator('[data-run-status="unreached"]')).toHaveCount(2);
+  await expect(page.locator('[data-run-status="waiting"]')).toHaveCount(0);
+  // Selecting a step in the graph moves focus to its entry in the trace.
+  await page.locator('.react-flow__node[data-id="mark"]').click();
+  await expect(page.locator("#step-mark")).toBeFocused();
+  await page.locator("section[aria-labelledby=path-heading]").screenshot({ path: "e2e/screenshots/run-graph.png" });
   await page.screenshot({ path: "e2e/screenshots/run-approved.png", fullPage: true });
 
   // 2. A small order needs no approval.
@@ -65,8 +78,8 @@ test("load the sample, run it, pause for approval, approve, then reject another 
   await page.getByRole("link", { name: "Sales order approval (sample)" }).click();
   await startRun(page, 900);
   await expect(page.getByText("succeeded").first()).toBeVisible();
-  await expect(page.getByText("Auto-approved (small order)")).toBeVisible();
-  await expect(page.getByText("Manager approval")).toHaveCount(0);
+  await expect(trace(page).getByText("Auto-approved (small order)")).toBeVisible();
+  await expect(trace(page).getByText("Manager approval")).toHaveCount(0);
 
   // 3. A rejected order never takes the approved path.
   await page.goto(`/o/${orgId}/workflows`);
@@ -76,7 +89,8 @@ test("load the sample, run it, pause for approval, approve, then reject another 
   await page.getByLabel("Comment (optional)").fill("Over budget");
   await page.getByRole("button", { name: "Reject", exact: true }).click();
   await expect(page.locator("header").getByText("rejected", { exact: true })).toBeVisible();
-  await expect(page.getByText("Mark order approved")).toHaveCount(0);
+  await expect(trace(page).getByText("Mark order approved")).toHaveCount(0);
+  await expect(page.locator('.react-flow__node[data-id="mark"] [data-run-status="unreached"]')).toHaveCount(1);
   await expect(page.getByText("Rejected", { exact: true }).first()).toBeVisible();
 
   // 4. Lists and the overview reflect the real records.

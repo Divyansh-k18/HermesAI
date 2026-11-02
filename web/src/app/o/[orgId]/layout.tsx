@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 
 import { Wordmark } from "@/components/auth-shell";
+import { CommandPalette, openCommandPalette } from "@/components/command-palette";
 import { ServerUnavailable } from "@/components/server-unavailable";
 import { Badge, Button, Skeleton } from "@/components/ui";
 import { ApiError, api, isServerProblem } from "@/lib/api";
@@ -61,8 +62,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {org.data && <CommandPalette orgId={orgId} isAdmin={isAdmin} onSignOut={signOut} />}
       <header className="sticky top-0 z-10 border-b border-line bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-12 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
           <Wordmark compact />
           <span className="text-faint" aria-hidden>
             /
@@ -77,7 +79,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
               if (event.target.value === "__new") router.push("/onboarding");
               else router.push(`/o/${event.target.value}`);
             }}
-            className="h-8 max-w-[10rem] truncate rounded-md border border-transparent bg-transparent px-1 text-[13px] hover:border-line-strong sm:max-w-[16rem]"
+            className="h-8 min-w-0 max-w-[7.5rem] truncate rounded-md border border-transparent bg-transparent px-1 text-[13px] hover:border-line-strong sm:max-w-[16rem]"
           >
             {orgs.data?.map((item) => (
               <option key={item.id} value={item.id}>
@@ -86,8 +88,23 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             ))}
             <option value="__new">New organization…</option>
           </select>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-[12px] text-muted sm:inline">{session.data?.user.email}</span>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              aria-label="Search and commands"
+              className="flex h-8 shrink-0 items-center gap-2 rounded-md border border-line px-2 text-[12px] text-muted transition-colors hover:border-line-strong hover:text-text sm:px-2.5"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden className="sm:hidden">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10.5 10.5 14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span className="hidden sm:inline">Search</span>
+              <kbd className="hidden rounded-sm border border-line-strong px-1 font-mono text-[10px] text-faint sm:inline">
+                Ctrl K
+              </kbd>
+            </button>
+            <span className="hidden text-[12px] text-muted lg:inline">{session.data?.user.email}</span>
             <Button variant="ghost" onClick={signOut}>
               Sign out
             </Button>
@@ -102,7 +119,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                 key={item.label}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`-mb-px border-b-2 px-2.5 pb-2.5 pt-1 text-[13px] transition-colors ${
+                className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 pb-2.5 pt-1 text-[13px] transition-colors ${
                   active ? "border-accent text-text" : "border-transparent text-muted hover:text-text"
                 }`}
               >
