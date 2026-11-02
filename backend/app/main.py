@@ -3,8 +3,11 @@
 Run locally:  uvicorn app.main:create_app --factory --reload
 """
 
+import asyncio
+import logging
 import re
 import uuid
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,17 +17,48 @@ from sqlalchemy.engine import Engine
 
 from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory
+from app.engine import process_due_timers
 from app.ratelimit import SlidingWindowLimiter
-from app.routers import auth, orgs, workflows
+from app.routers import auth, executions, orgs, workflows
 
 _SAFE_TRACE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+logger = logging.getLogger("hermes.scheduler")
+
+
+def _tick(session_factory) -> None:
+    with session_factory() as db:
+        process_due_timers(db)
+
+
+async def _scheduler_loop(session_factory, interval: float) -> None:
+    """Resume runs whose delay has elapsed. Run state is in the database, so a restart loses nothing."""
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await asyncio.to_thread(_tick, session_factory)
+        except Exception:
+            logger.exception("Scheduler tick failed")
 
 
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     settings = settings or get_settings()
     engine = engine or make_engine(settings.database_url)
 
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        task = None
+        if settings.scheduler_enabled:
+            task = asyncio.create_task(_scheduler_loop(app.state.session_factory, settings.scheduler_interval_seconds))
+        try:
+            yield
+        finally:
+            if task is not None:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+
     app = FastAPI(
+        lifespan=lifespan,
         title="Hermes AI API",
         version="0.1.0",
         docs_url=None if settings.is_production else "/api/docs",
@@ -84,4 +118,5 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(auth.router)
     app.include_router(orgs.router)
     app.include_router(workflows.router)
+    app.include_router(executions.router)
     return app

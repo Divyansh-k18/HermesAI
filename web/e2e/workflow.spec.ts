@@ -68,7 +68,7 @@ async function api(page: Page, method: "post" | "put", url: string, data: unknow
 test("build, validate, save, publish, and activate a workflow in the editor", async ({ page }) => {
   const orgId = await signUpWithOrg(page, "Builder");
 
-  await page.getByRole("link", { name: "Workflows" }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Workflows", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Workflow library" })).toBeVisible();
   await expect(page.getByText("No workflows yet")).toBeVisible();
 

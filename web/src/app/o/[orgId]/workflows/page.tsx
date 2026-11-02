@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { Badge, Button, EmptyState, Field, FormError, Skeleton } from "@/components/ui";
 import { ApiError, api, type WorkflowSummary } from "@/lib/api";
+import { SAMPLE_WORKFLOW, SAMPLE_WORKFLOW_NAME } from "@/lib/sample-workflow";
 
 function StatusBadge({ workflow }: { workflow: WorkflowSummary }) {
   if (workflow.active_version_number !== null) {
@@ -25,6 +26,7 @@ export default function WorkflowLibraryPage() {
   const org = useQuery({ queryKey: ["org", orgId], queryFn: () => api.orgs.get(orgId) });
   const workflows = useQuery({ queryKey: ["workflows", orgId], queryFn: () => api.workflows.list(orgId) });
   const canWrite = org.data ? org.data.role !== "viewer" : false;
+  const canPublish = org.data?.role === "owner" || org.data?.role === "admin";
 
   const [name, setName] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
@@ -34,6 +36,28 @@ export default function WorkflowLibraryPage() {
     onSuccess: async (detail) => {
       await queryClient.invalidateQueries({ queryKey: ["workflows", orgId] });
       router.push(`/o/${orgId}/workflows/${detail.workflow.id}`);
+    },
+    onError: (error) => setErrors(error instanceof ApiError ? error.messages : ["Could not reach the server."]),
+  });
+
+  // Creates, publishes, and activates the sample so a run and an approval can be tried right away.
+  const loadSample = useMutation({
+    mutationFn: async () => {
+      const created = await api.workflows.create(orgId, {
+        name: SAMPLE_WORKFLOW_NAME,
+        description: "Orders above ₹50,000 wait for a manager's approval.",
+      });
+      const id = created.workflow.id;
+      const saved = await api.workflows.saveDraft(orgId, id, { definition: SAMPLE_WORKFLOW, base_revision: 1 });
+      if (canPublish) {
+        await api.workflows.publish(orgId, id, saved.version.revision);
+        await api.workflows.activate(orgId, id, saved.version.version_number);
+      }
+      return id;
+    },
+    onSuccess: async (id) => {
+      await queryClient.invalidateQueries({ queryKey: ["workflows", orgId] });
+      router.push(`/o/${orgId}/workflows/${id}`);
     },
     onError: (error) => setErrors(error instanceof ApiError ? error.messages : ["Could not reach the server."]),
   });
@@ -65,6 +89,20 @@ export default function WorkflowLibraryPage() {
             Create
           </Button>
         </form>
+      )}
+      {canWrite && (
+        <div className="flex flex-wrap items-center gap-3 border border-line px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium">Try the sample sales-order workflow</p>
+            <p className="text-[12px] text-muted">
+              Orders above ₹50,000 pause for a manager&apos;s approval.
+              {canPublish ? " It is published and activated for you." : " It is saved as a draft for an admin to publish."}
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => loadSample.mutate()} loading={loadSample.isPending}>
+            Load sample
+          </Button>
+        </div>
       )}
       <FormError messages={errors} />
 

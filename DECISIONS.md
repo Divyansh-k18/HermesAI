@@ -44,3 +44,21 @@ Activation only marks which published version will receive events. Because no ex
 
 ## D-015: Builder views fit to a readable zoom
 Wide graphs keep at least 60 percent zoom and anchor at the trigger, so text stays legible. The Controls fit button still fits everything.
+
+## D-016: Database-backed engine now, Temporal later
+Docker is not available here and the time budget is short, so the first engine keeps every piece of run state in PostgreSQL-compatible tables and advances runs in process. Step execution is separate from the loop that picks the next step, so the runner can later be replaced by Temporal activities without changing the data model. This is a deliberate trade-off and is not a claim of Temporal-grade durability.
+
+## D-017: Runs are pinned to the version they started on
+A run stores the version id and always follows that frozen graph, even if another version is activated while it waits. Approving an old run cannot change which steps run.
+
+## D-018: Rejection is sticky
+A rejection sets the run outcome to rejected. If a graph is wired so the rejected branch reaches a normal ending, the run still finishes as rejected. The approved branch only runs after an approval is recorded as approved.
+
+## D-019: One-shot decisions and timers by atomic claim
+Approval decisions and delay resumes are claimed with a conditional update. Only one caller can win, so a double click, a retry, or two processes cannot run a step twice.
+
+## D-020: Members can run workflows but not see approval data
+Approval context can contain business data. Only owners and admins see and decide approvals. A member who started a run sees that it is waiting, nothing more.
+
+## D-021: Conditions fail closed
+A condition that cannot be evaluated because a field is missing or not a number fails the run with a visible error. It never silently picks a branch.

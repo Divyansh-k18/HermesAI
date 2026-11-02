@@ -237,3 +237,117 @@ def _block_published_update(_mapper, _connection, target: WorkflowVersion) -> No
 def _block_published_delete(_mapper, _connection, target: WorkflowVersion) -> None:
     if _original_status(target) == "published":
         raise PublishedVersionImmutableError("Published workflow versions cannot be deleted.")
+
+
+EXECUTION_STATUSES = (
+    "running",
+    "waiting_approval",
+    "waiting_timer",
+    "succeeded",
+    "failed",
+    "rejected",
+    "cancelled",
+)
+TERMINAL_STATUSES = frozenset({"succeeded", "failed", "rejected", "cancelled"})
+
+
+class WorkflowExecution(Base):
+    """One run of a published workflow version. All progress lives in these rows, so a run survives restarts."""
+
+    __tablename__ = "workflow_executions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "workflow_id", "idempotency_key", name="uq_execution_idempotency"),
+        CheckConstraint(
+            "status IN ('running', 'waiting_approval', 'waiting_timer', "
+            "'succeeded', 'failed', 'rejected', 'cancelled')",
+            name="ck_execution_status",
+        ),
+        Index("ix_executions_org_started", "organization_id", "started_at"),
+        Index("ix_executions_due", "status", "resume_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    workflow_id: Mapped[str] = mapped_column(String(36), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False)
+    # The exact frozen version this run follows, even if another version is activated later.
+    version_id: Mapped[str] = mapped_column(String(36), ForeignKey("workflow_versions.id"), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="running", nullable=False)
+    trigger_type: Mapped[str] = mapped_column(String(40), default="manual", nullable=False)
+    trigger_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    variables: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    current_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    resume_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Set to "rejected" when a person rejects an approval. A rejected run can never finish as succeeded.
+    outcome: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class StepExecution(Base):
+    """One node visited by an execution, with its input, output, and error."""
+
+    __tablename__ = "step_executions"
+    __table_args__ = (
+        CheckConstraint("status IN ('running', 'waiting', 'succeeded', 'failed', 'cancelled')", name="ck_step_status"),
+        Index("ix_steps_execution", "execution_id", "sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    execution_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workflow_executions.id", ondelete="CASCADE"), nullable=False
+    )
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    node_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    node_label: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="running", nullable=False)
+    input: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    output: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class Approval(Base):
+    """A human decision a run is waiting for."""
+
+    __tablename__ = "approvals"
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'approved', 'rejected', 'cancelled')", name="ck_approval_status"),
+        Index("ix_approvals_org_status", "organization_id", "status", "requested_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    execution_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workflow_executions.id", ondelete="CASCADE"), nullable=False
+    )
+    step_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("step_executions.id", ondelete="CASCADE"), nullable=False
+    )
+    node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    approver_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    # Snapshot of the run's data when approval was requested, so the approver sees what they are approving.
+    context: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    decided_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    comment: Mapped[str] = mapped_column(Text, default="", nullable=False)

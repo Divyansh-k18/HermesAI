@@ -40,6 +40,7 @@ def settings():
         cors_origins=["http://localhost:3000"],
         login_rate_limit=100,
         login_rate_window_seconds=900,
+        scheduler_enabled=False,
     )
 
 

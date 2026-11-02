@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Fernet key used to encrypt integration credentials at rest. Required in production.
     credential_encryption_key: str = ""
     invitation_ttl_days: int = 7
+    # Resumes runs whose delay has elapsed. Disabled in unit tests, which call the engine directly.
+    scheduler_enabled: bool = True
+    scheduler_interval_seconds: float = 2.0
     login_rate_limit: int = 10
     login_rate_window_seconds: int = 900
 

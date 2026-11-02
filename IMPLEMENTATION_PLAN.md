@@ -28,7 +28,16 @@ Status key: DONE (implemented and tested), PARTIAL, TODO.
 | Execution tracing and history | TODO | Needs the execution engine. |
 
 ## Phase 3 — Execution Engine
-Temporal integration, workers, triggers, retries, persisted execution state, recovery. TODO.
+| Item | Status | Notes |
+|---|---|---|
+| Persisted execution state | DONE | Runs, steps, and approvals live in the database. Tested across an application restart. |
+| Step-level records | DONE | Input, output, error, and timing for every step. |
+| Idempotency | DONE | Keys on run start. Atomic claims for decisions and timers. |
+| Delays and resume | DONE | Database poller. |
+| Cancellation | DONE | Cancels the run and its pending approvals. |
+| Temporal and workers | TODO | The engine is in-process. See D-016. |
+| Triggers from real events | TODO | Manual and API starts only. No webhooks. |
+| Retries, timeouts, reconciliation | TODO | No retry policy and no stuck-run recovery. |
 
 ## Phase 4 — External Integrations
 HubSpot, ERPNext, Gmail, PostgreSQL, generic REST. TODO. Each requires real sandbox credentials before being called verified.
@@ -37,7 +46,15 @@ HubSpot, ERPNext, Gmail, PostgreSQL, generic REST. TODO. Each requires real sand
 Natural-language workflow generation, structured agent output, permissioned tool calls, policy enforcement. TODO.
 
 ## Phase 6 — Human Approval
-Approval records, notifications, approval UI, durable waiting, continuation and rejection handling. TODO.
+| Item | Status | Notes |
+|---|---|---|
+| Approval records and context | DONE | Data snapshot shown to the approver. |
+| Approval UI and history | DONE | Pending list, history, comments, decision on the run page. |
+| Durable waiting and continuation | DONE | Resumes after a restart. |
+| Authorization | DONE | Role named by the workflow, enforced on the server, denied attempts audited. |
+| Rejection handling | DONE | Approved path never runs. A rejected run cannot finish as succeeded. |
+| Notifications | PARTIAL | A pending count badge in the app. No email or push. |
+| Expiry, reminders, separation of duties | TODO | See known issues. |
 
 ## Phase 7 — Visual Polish
 Design system refinements, motion, 3D brand asset, optional 3D inspector, accessibility pass. TODO.

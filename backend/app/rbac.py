@@ -17,6 +17,11 @@ _PERMISSIONS: dict[str, frozenset[str]] = {
     "workflows:write": frozenset({"owner", "admin", "member"}),
     # Publishing freezes a version and activating makes it live, so both stay with owners and admins.
     "workflows:publish": frozenset({"owner", "admin"}),
+    "executions:read": frozenset(ROLES),
+    "executions:run": frozenset({"owner", "admin", "member"}),
+    # Approvals can contain business data, so they are visible only to the people who may decide them.
+    "approvals:read": frozenset({"owner", "admin"}),
+    "approvals:decide": frozenset({"owner", "admin"}),
 }
 
 

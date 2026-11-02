@@ -14,6 +14,13 @@ export default function AuditPage() {
     retry: false,
   });
 
+  const members = useQuery({ queryKey: ["members", orgId], queryFn: () => api.orgs.members(orgId) });
+  // Names for the people who acted. Someone who has since left the organization shows as "former member".
+  const nameOf = (userId: string | null): string => {
+    if (!userId) return "system";
+    return members.data?.find((member) => member.user_id === userId)?.full_name ?? "former member";
+  };
+
   const forbidden = events.error instanceof ApiError && events.error.status === 403;
 
   return (
@@ -43,6 +50,7 @@ export default function AuditPage() {
               <tr>
                 <th className="px-3 py-2 font-normal">Time</th>
                 <th className="px-3 py-2 font-normal">Action</th>
+                <th className="px-3 py-2 font-normal">Who</th>
                 <th className="px-3 py-2 font-normal">Outcome</th>
                 <th className="px-3 py-2 font-normal">Detail</th>
                 <th className="px-3 py-2 font-normal">Trace</th>
@@ -55,6 +63,7 @@ export default function AuditPage() {
                     {new Date(event.created_at + "Z").toLocaleString()}
                   </td>
                   <td className="px-3 py-2.5 font-mono text-[12px]">{event.action}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted">{nameOf(event.actor_user_id)}</td>
                   <td className="px-3 py-2.5">
                     <Badge tone={event.outcome === "success" ? "success" : "warning"}>{event.outcome}</Badge>
                   </td>

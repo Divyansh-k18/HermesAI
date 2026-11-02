@@ -41,3 +41,15 @@
 
 ## Test servers use separate ports
 Browser tests start their own backend on port 8100 and web app on port 3100, so they no longer collide with a developer's servers on 8000 and 3000. They still build into `web/.next`, so stop `npm run dev` before running them.
+
+## Phase 3 and 6 additions
+1. **The engine is in-process, not Temporal.** All state is in the database and a restart loses nothing, but there is no distributed worker fleet, no automatic retry policy, and no activity timeouts. A crash in the middle of a single step could leave a run stuck as running. There is no reconciliation view yet.
+2. **Delay timers poll every two seconds** from inside the API process. With several API instances each one polls. Claims are atomic, so a delay resumes once, but this has not been load tested.
+3. **Steps needing other systems fail.** CRM, ERP, database, email, HTTP, and AI steps stop the run with "not available yet".
+4. **No webhook or scheduled triggers.** Runs start manually or by API call.
+5. **No run retry.** A failed run cannot be restarted from the failed step.
+6. **No separation of duties.** The person who starts a run can also approve it if they hold the approver role.
+7. **No approval expiry or reminders.** A pending approval waits indefinitely until decided or the run is cancelled.
+8. **Run payloads are free-form JSON** up to 50 KB. Payload contents are stored as given and shown to approvers.
+9. **Average run time includes waiting for people.**
+10. **Existing local databases need `alembic upgrade head`** after pulling these changes.

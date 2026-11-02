@@ -3,29 +3,31 @@
 Last updated: 2026-11-02
 
 ## Current milestone
-Phase 1 is functionally complete for identity, organizations, and audit. Phase 2 is partly done: workflow definitions, versioning, validation, and the visual builder work end to end. Execution history is not started because nothing executes yet.
+A working vertical slice: accounts and teams, a visual workflow builder with versioning, an execution engine, human approvals with durable waiting, an operations overview, and an audit log. The slice is demo-ready for a hackathon presentation. It is not a finished product.
 
 ## What exists
-- `backend/`: FastAPI service. Server-side sessions, CSRF, RBAC, tenant isolation, invitations, audit log, and workflow APIs.
-- Workflow model: a workflow has versions. Drafts are editable and published versions are frozen in both the API and the ORM. A version can be marked active.
-- Validation: structural rules (one trigger, reachable nodes, no cycles, required branches for conditions and approvals) and per-node configuration rules. HTTP node URLs are checked structurally.
-- `backend/migrations/`: two Alembic migrations. Both apply, downgrade, and reapply on SQLite.
-- `web/`: Next.js 16 app. Auth, onboarding, invitations, overview, team, audit log, workflow library, and the workflow builder (React Flow).
-- Builder features: palette with click and drag to add, drag to connect, branch outputs, node inspector, undo and redo, auto layout, live server validation, save with conflict detection, publish, activate, deactivate, version list, and read-only mode for viewers.
-- `.github/workflows/ci.yml`: backend, web, and browser jobs. Not yet run on GitHub.
-- Documentation files at the repository root.
+- `backend/`: FastAPI service. Server-side sessions, CSRF, RBAC, tenant isolation, invitations, audit log, workflow APIs, execution engine, approvals, and metrics.
+- Execution engine (`backend/app/engine.py`): database-backed and restart-safe. Runs trigger, condition, transform, delay, approval, and end steps. Records every step with input, output, and error. Idempotency keys. Runs are pinned to the version they started on.
+- Approvals: a run pauses at an approval step. Only the role the workflow names can decide. A decision applies once. A rejected run can never finish as succeeded. Members can run workflows but cannot see or decide approvals.
+- Delays resume through a poller that reads the database, so a restart loses nothing.
+- `backend/migrations/`: three Alembic migrations. They apply, downgrade, and reapply on SQLite.
+- `web/`: Next.js 16 app. Auth, onboarding, invitations, overview with real metrics and a seven-day chart, workflow library with a one-click sample, the builder, a runs list, a run detail page with a step trace, an approvals page, team, and an audit log with actor names.
+- `README.md` and `DEMO.md`: honest scope and a four-minute demo script.
+- `.github/workflows/ci.yml`: backend, web, and browser jobs. Never run on GitHub.
 
-## What does not exist yet
-- Any execution. No Temporal, workers, triggers, retries, or execution records. "Active" only marks a version.
-- Integrations (HubSpot, ERPNext, Gmail, PostgreSQL, REST), the AI runtime, approvals, notifications, analytics, billing and entitlements.
-- Natural language workflow creation.
-- Account recovery, invitation emails, command palette, 3D, public marketing site, light-theme toggle.
-- PostgreSQL verification. Docker and `psql` are not installed on this machine.
+## What does not exist
+- External integrations. HubSpot, ERPNext, Gmail, PostgreSQL, and HTTP steps fail with "not available yet".
+- AI steps and natural-language workflow creation.
+- Temporal. The engine is in-process.
+- Webhook triggers, so runs start manually or through the API.
+- Billing, usage limits, account recovery, invitation email, command palette, 3D, marketing site.
+- PostgreSQL verification and any security review.
 
 ## Environment notes
-- Windows 11, Python 3.14, Node 24. The backend venv is at `backend/.venv`.
-- The repository lives inside OneDrive. If `next build` fails with EPERM on `.next`, delete `web/.next` and rebuild.
-- Git history: Phase 1 backend, frontend, e2e tests, CI, workflow backend, then the workflow builder.
+- Windows 11, Python 3.14, Node 24. Backend venv at `backend/.venv`.
+- Browser tests use ports 8100 and 3100. Dev servers use 8000 and 3000.
+- The repository lives in OneDrive. If `next build` fails with EPERM on `.next`, delete `web/.next`.
+- Do not rewrite source files with PowerShell Get-Content and Set-Content. It corrupts non-ASCII characters.
 
 ## Next milestone
-Execution engine foundation. See `NEXT_ACTIONS.md`.
+A real integration. See `NEXT_ACTIONS.md`.

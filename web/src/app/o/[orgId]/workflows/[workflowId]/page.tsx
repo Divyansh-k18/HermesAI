@@ -25,6 +25,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Inspector } from "@/components/workflow/inspector";
 import { NodeCard } from "@/components/workflow/node-card";
+import { RunDialog } from "@/components/workflow/run-dialog";
+import { payloadTemplate } from "@/lib/sample-workflow";
 import { Badge, Button, EmptyState, Skeleton } from "@/components/ui";
 import {
   ApiError,
@@ -150,6 +152,7 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
   const [busy, setBusy] = useState<"save" | "publish" | "activate" | null>(null);
   const [name, setName] = useState(detail.workflow.name);
   const [conflict, setConflict] = useState(false);
+  const [runTemplate, setRunTemplate] = useState<Record<string, unknown> | null>(null);
 
   // ---- viewport ----
   // Fit the graph, but never zoom out below a readable size. A wide graph is anchored at its first step.
@@ -635,6 +638,24 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
               </Button>
             </>
           )}
+          {canEdit && live !== null && (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  // Runs follow the active published version, so the example data comes from that version.
+                  const active = await api.workflows.version(orgId, workflowId, live);
+                  setRunTemplate(payloadTemplate(active.definition));
+                } catch (error) {
+                  setErrors(explain(error));
+                }
+              }}
+              disabled={dirty || busy !== null}
+              title={dirty ? "Save your changes first. Runs use the active published version." : "Run the active version"}
+            >
+              Run
+            </Button>
+          )}
           {canPublish && (
             <>
               <Button onClick={publish} loading={busy === "publish"} disabled={!publishable || busy !== null}>
@@ -653,6 +674,17 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
           )}
         </div>
       </div>
+
+      {runTemplate !== null && live !== null && (
+        <RunDialog
+          orgId={orgId}
+          workflowId={workflowId}
+          workflowName={detail.workflow.name}
+          versionNumber={live}
+          template={runTemplate}
+          onClose={() => setRunTemplate(null)}
+        />
+      )}
 
       {(errors.length > 0 || conflict) && (
         <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-danger/40 px-4 py-2 text-[13px] text-danger sm:px-6">

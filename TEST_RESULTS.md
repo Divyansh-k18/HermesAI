@@ -82,3 +82,19 @@ Regression assertions were added for the zero-height canvas and the readable zoo
 One run had a single failure in the sign-up redirect step. It passed on three reruns. The assertion timeout was raised from 5 to 10 seconds. The cause was not proven.
 
 Still not done: keyboard-only and accessibility scans of the builder, phone-width layout of the builder, Firefox and Safari, and visual review of the register, invite, onboarding, audit, and library pages.
+
+## Phase 3 and 6 update (execution engine and approvals)
+
+Backend: `python -m pytest` from `backend/` runs **146 passed** (111 earlier plus 35 for execution). `ruff check` and `ruff format --check` pass.
+
+Execution tests cover: condition operators and failing closed on bad data; a small order finishing without approval; a large order pausing, then continuing when approved; a rejected order never running the approved path; a graph wired so rejection reaches a normal ending still finishing as rejected; approver role enforcement with denied attempts audited; members and viewers blocked from approvals; an approval deciding only once; idempotency keys returning the same run; runs needing an active version; viewers reading but not running; runs staying on the version they started on after a new version is activated; delays waiting and resuming; a new application instance continuing a waiting run on the same database; steps needing other systems failing with a clear message; bad input failing the run; cancelling a run and its approval; tenant isolation for runs and approvals; CSRF; payload bounds; audit events; metrics from real rows; and organization ids on step and approval rows.
+
+Migrations: three migrations went up, down to base, and up again on a fresh SQLite database. Not run on PostgreSQL.
+
+Browser tests: `npm run e2e` runs **10 passed**. New: the demo story (load the sample, run a large order, see it pause, approve, run a small order, reject a large one, confirm the approved path never ran, check lists, history, and overview) and a roles test (a member runs a workflow but cannot see or decide approvals, the owner decides, the member's run completes).
+
+Defect found by the browser run: a PowerShell find and replace corrupted non-ASCII characters in two test files, so tests searched for garbled text. Fixed by reversing the encoding. The cause and rule are recorded in project notes.
+
+The overview's average run time includes time spent waiting for a person, which can make it large for approval flows.
+
+Still not done: PostgreSQL, security review, accessibility scan, phone layout, and every external integration.

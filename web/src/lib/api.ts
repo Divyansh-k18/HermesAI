@@ -139,6 +139,75 @@ export interface DraftSaved {
   issues: WorkflowIssue[];
 }
 
+export type ExecutionStatus =
+  | "running"
+  | "waiting_approval"
+  | "waiting_timer"
+  | "succeeded"
+  | "failed"
+  | "rejected"
+  | "cancelled";
+
+export interface ExecutionSummary {
+  id: string;
+  workflow_id: string;
+  workflow_name: string;
+  version_number: number;
+  status: ExecutionStatus;
+  started_at: string;
+  finished_at: string | null;
+  error: string | null;
+}
+
+export interface StepRecord {
+  id: string;
+  sequence: number;
+  node_id: string;
+  node_type: NodeKind;
+  node_label: string;
+  status: "running" | "waiting" | "succeeded" | "failed" | "cancelled";
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  error: string | null;
+  started_at: string;
+  finished_at: string | null;
+}
+
+export interface ApprovalItem {
+  id: string;
+  execution_id: string;
+  workflow_id: string;
+  workflow_name: string;
+  title: string;
+  approver_role: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  context: Record<string, unknown>;
+  requested_at: string;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  comment: string;
+  can_decide: boolean;
+}
+
+export interface ExecutionDetail extends ExecutionSummary {
+  trigger_payload: Record<string, unknown>;
+  variables: Record<string, unknown>;
+  outcome: string | null;
+  trace_id: string | null;
+  steps: StepRecord[];
+  approvals: ApprovalItem[];
+}
+
+export interface Metrics {
+  total_runs: number;
+  by_status: Record<string, number>;
+  pending_approvals: number;
+  active_workflows: number;
+  total_workflows: number;
+  average_duration_seconds: number | null;
+  last_7_days: { date: string; succeeded: number; failed: number; rejected: number }[];
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly messages: string[];
@@ -258,5 +327,31 @@ export const api = {
       request<WorkflowSummary>("POST", `/orgs/${orgId}/workflows/${workflowId}/deactivate`),
     archive: (orgId: string, workflowId: string) =>
       request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}`),
+    version: (orgId: string, workflowId: string, versionNumber: number) =>
+      request<WorkflowVersion>("GET", `/orgs/${orgId}/workflows/${workflowId}/versions/${versionNumber}`),
+    run: (orgId: string, workflowId: string, input: { payload: Record<string, unknown>; idempotency_key?: string }) =>
+      request<ExecutionDetail>("POST", `/orgs/${orgId}/workflows/${workflowId}/executions`, input),
+  },
+  executions: {
+    list: (orgId: string, params: { status?: string; workflow_id?: string } = {}) => {
+      const query = new URLSearchParams();
+      if (params.status) query.set("status", params.status);
+      if (params.workflow_id) query.set("workflow_id", params.workflow_id);
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+      return request<ExecutionSummary[]>("GET", `/orgs/${orgId}/executions${suffix}`);
+    },
+    get: (orgId: string, executionId: string) =>
+      request<ExecutionDetail>("GET", `/orgs/${orgId}/executions/${executionId}`),
+    cancel: (orgId: string, executionId: string) =>
+      request<ExecutionDetail>("POST", `/orgs/${orgId}/executions/${executionId}/cancel`),
+  },
+  approvals: {
+    list: (orgId: string, status: "pending" | "decided" | "all" = "pending") =>
+      request<ApprovalItem[]>("GET", `/orgs/${orgId}/approvals?status=${status}`),
+    decide: (orgId: string, approvalId: string, input: { decision: "approve" | "reject"; comment?: string }) =>
+      request<ExecutionDetail>("POST", `/orgs/${orgId}/approvals/${approvalId}/decision`, input),
+  },
+  metrics: {
+    get: (orgId: string) => request<Metrics>("GET", `/orgs/${orgId}/metrics`),
   },
 };

@@ -12,6 +12,8 @@ import { useRequireSession, useSignOut } from "@/lib/session";
 const NAV = [
   { href: "", label: "Overview" },
   { href: "/workflows", label: "Workflows" },
+  { href: "/executions", label: "Runs" },
+  { href: "/approvals", label: "Approvals", adminOnly: true },
   { href: "/team", label: "Team" },
   { href: "/audit", label: "Audit log" },
 ];
@@ -29,6 +31,15 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     enabled: Boolean(session.data),
     retry: false,
   });
+
+  const metrics = useQuery({
+    queryKey: ["metrics", orgId],
+    queryFn: () => api.metrics.get(orgId),
+    enabled: Boolean(org.data),
+    refetchInterval: 10_000,
+  });
+  const isAdmin = org.data?.role === "owner" || org.data?.role === "admin";
+  const pending = metrics.data?.pending_approvals ?? 0;
 
   const notFound = org.error instanceof ApiError && org.error.status === 404;
   // The workflow builder is a full-bleed workspace rather than a centered page.
@@ -68,8 +79,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </div>
-        <nav aria-label="Primary" className="mx-auto flex max-w-6xl gap-1 px-4 sm:px-6">
-          {NAV.map((item) => {
+        <nav aria-label="Primary" className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6">
+          {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
             const href = `/o/${orgId}${item.href}`;
             const active = item.href === "" ? pathname === href : pathname.startsWith(href);
             return (
@@ -82,11 +93,19 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 {item.label}
+                {item.adminOnly && pending > 0 && (
+                  <span
+                    aria-label={`${pending} pending`}
+                    className="ml-1.5 rounded-sm border border-warning/50 px-1 font-mono text-[10px] leading-4 text-warning"
+                  >
+                    {pending}
+                  </span>
+                )}
               </Link>
             );
           })}
           {org.data && (
-            <span className="ml-auto pb-2">
+            <span className="ml-auto shrink-0 pb-2">
               <Badge tone="accent">{org.data.role}</Badge>
             </span>
           )}
