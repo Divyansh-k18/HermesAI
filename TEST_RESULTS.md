@@ -60,3 +60,25 @@ Screenshots were reviewed at 1280px and 390px for overview, team, and login.
 - PostgreSQL migration, backup, or restore.
 - Security scanning beyond ruff's bandit-style rules.
 - Any provider integration. No HubSpot, ERPNext, Gmail, or other sandbox was connected.
+
+## Phase 2 update (workflows)
+
+Backend: `python -m pytest` from `backend/` now runs **111 passed** (43 identity and organization, 49 workflow validation, 19 workflow API). `ruff check` and `ruff format --check` pass.
+
+Workflow API tests cover role permissions, tenant isolation, CSRF, stale revision conflicts, malformed definitions, publish blocking on invalid graphs, immutability of published versions at the API and ORM level, the one-draft-per-workflow database index, activation rules, archive rules, and audit events.
+
+Migrations: upgrade, downgrade to base, and upgrade again succeeded on a fresh SQLite database. The partial unique index and the named foreign key were present afterwards. Not run on PostgreSQL. The first generated migration created a table with a foreign key to a table that did not exist yet, which SQLite accepts and PostgreSQL rejects. It was restructured by hand, but that fix is unverified on PostgreSQL.
+
+Browser tests: `npm run e2e` runs **8 passed** (5 earlier plus 3 for the builder). The builder tests drive real mouse interaction: add steps from the palette, drag between handles to connect, undo and redo, save, publish, activate, reload to confirm persistence, then edit a published workflow and confirm a new draft appears while version 1 stays frozen. A seeded eight-step sales-order graph is checked for rendering, validation, and the inspector. Auto layout is checked at 820px width.
+
+Defects found by reviewing screenshots and fixed:
+- The canvas collapsed to zero height below the large breakpoint, so the editor was blank on tablets.
+- Fit-to-view shrank wide graphs to about a third of normal size. It now keeps a readable zoom and starts at the trigger.
+- Branch labels sat on bright patches and the minimap was a light grey block. Both now follow the dark theme.
+- End steps said "Not configured".
+
+Regression assertions were added for the zero-height canvas and the readable zoom.
+
+One run had a single failure in the sign-up redirect step. It passed on three reruns. The assertion timeout was raised from 5 to 10 seconds. The cause was not proven.
+
+Still not done: keyboard-only and accessibility scans of the builder, phone-width layout of the builder, Firefox and Safari, and visual review of the register, invite, onboarding, audit, and library pages.

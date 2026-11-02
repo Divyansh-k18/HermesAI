@@ -59,14 +59,97 @@ export interface AuditEvent {
   created_at: string;
 }
 
+export type NodeKind =
+  | "trigger"
+  | "ai_agent"
+  | "condition"
+  | "transformation"
+  | "crm"
+  | "erp"
+  | "database"
+  | "email"
+  | "http"
+  | "approval"
+  | "delay"
+  | "end";
+
+export interface WorkflowNodeDef {
+  id: string;
+  type: NodeKind;
+  label: string;
+  position: { x: number; y: number };
+  config: Record<string, unknown>;
+}
+
+export interface WorkflowEdgeDef {
+  id: string;
+  source: string;
+  target: string;
+  source_handle: string | null;
+  label: string;
+}
+
+export interface WorkflowDefinition {
+  nodes: WorkflowNodeDef[];
+  edges: WorkflowEdgeDef[];
+}
+
+export interface WorkflowIssue {
+  code: string;
+  severity: "error" | "warning";
+  message: string;
+  node_id: string | null;
+}
+
+export interface VersionMeta {
+  id: string;
+  version_number: number;
+  status: "draft" | "published";
+  revision: number;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+}
+
+export interface WorkflowVersion extends VersionMeta {
+  definition: WorkflowDefinition;
+}
+
+export interface WorkflowSummary {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  active_version_number: number | null;
+  latest_published_number: number | null;
+  has_draft: boolean;
+}
+
+export interface WorkflowDetail {
+  workflow: WorkflowSummary;
+  versions: VersionMeta[];
+  draft: WorkflowVersion | null;
+  latest_published: WorkflowVersion | null;
+  issues: WorkflowIssue[];
+}
+
+export interface DraftSaved {
+  version: WorkflowVersion;
+  issues: WorkflowIssue[];
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly messages: string[];
+  /** Parsed response body, for errors that carry extra data such as publish issues. */
+  readonly payload: unknown;
 
-  constructor(status: number, messages: string[]) {
+  constructor(status: number, messages: string[], payload: unknown = null) {
     super(messages[0] ?? "Request failed.");
     this.status = status;
     this.messages = messages;
+    this.payload = payload;
   }
 }
 
@@ -111,7 +194,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!response.ok) {
     const detail = payload && typeof payload === "object" && "detail" in payload ? (payload as { detail: unknown }).detail : null;
-    throw new ApiError(response.status, describeDetail(detail));
+    throw new ApiError(response.status, describeDetail(detail), payload);
   }
   return payload as T;
 }
@@ -150,5 +233,30 @@ export const api = {
   },
   invitations: {
     accept: (token: string) => request<Organization>("POST", "/invitations/accept", { token }),
+  },
+  workflows: {
+    list: (orgId: string) => request<WorkflowSummary[]>("GET", `/orgs/${orgId}/workflows`),
+    create: (orgId: string, input: { name: string; description?: string }) =>
+      request<WorkflowDetail>("POST", `/orgs/${orgId}/workflows`, input),
+    get: (orgId: string, workflowId: string) =>
+      request<WorkflowDetail>("GET", `/orgs/${orgId}/workflows/${workflowId}`),
+    update: (orgId: string, workflowId: string, input: { name?: string; description?: string }) =>
+      request<WorkflowSummary>("PATCH", `/orgs/${orgId}/workflows/${workflowId}`, input),
+    saveDraft: (orgId: string, workflowId: string, input: { definition: WorkflowDefinition; base_revision?: number }) =>
+      request<DraftSaved>("PUT", `/orgs/${orgId}/workflows/${workflowId}/draft`, input),
+    discardDraft: (orgId: string, workflowId: string) =>
+      request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}/draft`),
+    validate: (orgId: string, workflowId: string, definition: WorkflowDefinition) =>
+      request<WorkflowIssue[]>("POST", `/orgs/${orgId}/workflows/${workflowId}/validate`, definition),
+    publish: (orgId: string, workflowId: string, baseRevision: number) =>
+      request<WorkflowVersion>("POST", `/orgs/${orgId}/workflows/${workflowId}/publish`, {
+        base_revision: baseRevision,
+      }),
+    activate: (orgId: string, workflowId: string, versionNumber: number) =>
+      request<WorkflowSummary>("POST", `/orgs/${orgId}/workflows/${workflowId}/versions/${versionNumber}/activate`),
+    deactivate: (orgId: string, workflowId: string) =>
+      request<WorkflowSummary>("POST", `/orgs/${orgId}/workflows/${workflowId}/deactivate`),
+    archive: (orgId: string, workflowId: string) =>
+      request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}`),
   },
 };

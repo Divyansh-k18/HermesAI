@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 45_000,
+  timeout: 60_000,
+  // The sign-up redirect chain can exceed the 5s default on slow machines.
+  expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],

@@ -29,3 +29,18 @@ Argon2 via `argon2-cffi`. Unknown-email logins run a dummy verification so respo
 
 ## D-010: Frontend deferred until backend slice is tested
 The backend auth and tenancy layer was built and tested first, because the frontend depends on its contract.
+
+## D-011: Drafts and published versions
+A workflow has one editable draft at most and any number of frozen published versions. Immutability is enforced twice: the API never updates a published row, and the ORM refuses to. A partial unique index allows one draft per workflow. Editing a published workflow creates the next draft on the first save.
+
+## D-012: Structured conditions, no expression language
+Conditions are a field, an operator from a fixed list, and a value. There is no free-form expression, so there is nothing to evaluate dynamically and no injection surface. More power can be added later through explicit operators.
+
+## D-013: Save accepts incomplete graphs, publish does not
+Saving stores whatever the user has so work is never lost, and returns the issues. Publishing re-validates on the server and refuses any error. Publishing also requires the revision the user reviewed, so a stale view cannot publish unseen changes.
+
+## D-014: "Active", not "live"
+Activation only marks which published version will receive events. Because no execution engine exists, the interface says "active" and states that nothing runs yet.
+
+## D-015: Builder views fit to a readable zoom
+Wide graphs keep at least 60 percent zoom and anchor at the trigger, so text stays legible. The Controls fit button still fits everything.

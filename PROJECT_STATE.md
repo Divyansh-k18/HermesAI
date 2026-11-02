@@ -3,25 +3,29 @@
 Last updated: 2026-11-02
 
 ## Current milestone
-Phase 1 (Engineering Foundation): backend and a first frontend slice are implemented. The frontend builds and talks to the backend over HTTP. It has not been viewed in a browser.
+Phase 1 is functionally complete for identity, organizations, and audit. Phase 2 is partly done: workflow definitions, versioning, validation, and the visual builder work end to end. Execution history is not started because nothing executes yet.
 
 ## What exists
-- `backend/`: FastAPI service with server-side sessions, CSRF protection, RBAC, tenant isolation, invitations, and audit logging.
-- `backend/migrations/`: Alembic setup with one initial migration (`phase1 identity tenancy audit`).
-- `web/`: Next.js 16 app with Tailwind v4 design tokens, a typed API client, and these screens: login, registration, onboarding, invitation acceptance, organization overview, team (members, roles, invitations), and audit log.
-- `/api` requests from the browser are proxied by Next.js to the backend (`HERMES_API_URL`, default `http://127.0.0.1:8000`).
-- Documentation files at the repository root (this file and siblings).
+- `backend/`: FastAPI service. Server-side sessions, CSRF, RBAC, tenant isolation, invitations, audit log, and workflow APIs.
+- Workflow model: a workflow has versions. Drafts are editable and published versions are frozen in both the API and the ORM. A version can be marked active.
+- Validation: structural rules (one trigger, reachable nodes, no cycles, required branches for conditions and approvals) and per-node configuration rules. HTTP node URLs are checked structurally.
+- `backend/migrations/`: two Alembic migrations. Both apply, downgrade, and reapply on SQLite.
+- `web/`: Next.js 16 app. Auth, onboarding, invitations, overview, team, audit log, workflow library, and the workflow builder (React Flow).
+- Builder features: palette with click and drag to add, drag to connect, branch outputs, node inspector, undo and redo, auto layout, live server validation, save with conflict detection, publish, activate, deactivate, version list, and read-only mode for viewers.
+- `.github/workflows/ci.yml`: backend, web, and browser jobs. Not yet run on GitHub.
+- Documentation files at the repository root.
 
 ## What does not exist yet
-- Account recovery screen, command palette, motion polish, 3D, light-theme toggle, public marketing site.
-- Browser tests (Playwright) and visual review of rendered pages.
-- Workflow engine, Temporal, workers, connectors (HubSpot, ERPNext, Gmail, PostgreSQL, REST), AI runtime, approvals UI, analytics, billing.
-- PostgreSQL verification, Docker, CI, Playwright, observability wiring.
+- Any execution. No Temporal, workers, triggers, retries, or execution records. "Active" only marks a version.
+- Integrations (HubSpot, ERPNext, Gmail, PostgreSQL, REST), the AI runtime, approvals, notifications, analytics, billing and entitlements.
+- Natural language workflow creation.
+- Account recovery, invitation emails, command palette, 3D, public marketing site, light-theme toggle.
+- PostgreSQL verification. Docker and `psql` are not installed on this machine.
 
 ## Environment notes
-- Windows 11, Python 3.14, Node 24, npm 11, Git 2.53.
-- Docker and `psql` are not installed. PostgreSQL has not been exercised.
-- The backend venv is at `backend/.venv` and is git-ignored.
+- Windows 11, Python 3.14, Node 24. The backend venv is at `backend/.venv`.
+- The repository lives inside OneDrive. If `next build` fails with EPERM on `.next`, delete `web/.next` and rebuild.
+- Git history: Phase 1 backend, frontend, e2e tests, CI, workflow backend, then the workflow builder.
 
 ## Next milestone
-Phase 1 completion: Next.js shell and design tokens, then the auth and organization screens wired to these APIs. See `NEXT_ACTIONS.md`.
+Execution engine foundation. See `NEXT_ACTIONS.md`.

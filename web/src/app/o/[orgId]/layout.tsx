@@ -11,6 +11,7 @@ import { useRequireSession, useSignOut } from "@/lib/session";
 
 const NAV = [
   { href: "", label: "Overview" },
+  { href: "/workflows", label: "Workflows" },
   { href: "/team", label: "Team" },
   { href: "/audit", label: "Audit log" },
 ];
@@ -30,6 +31,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   });
 
   const notFound = org.error instanceof ApiError && org.error.status === 404;
+  // The workflow builder is a full-bleed workspace rather than a centered page.
+  const fullBleed = /\/workflows\/[^/]+$/.test(pathname);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,7 +92,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main className={fullBleed ? "flex w-full flex-1 flex-col" : "mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6"}>
         {notFound ? (
           <p className="text-muted">This organization does not exist or you no longer have access to it.</p>
         ) : org.isLoading || session.isLoading ? (

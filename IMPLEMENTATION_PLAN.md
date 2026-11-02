@@ -16,7 +16,16 @@ Status key: DONE (implemented and tested), PARTIAL, TODO.
 | Development environment and CI | PARTIAL | Lint and tests run locally. No CI config yet. |
 
 ## Phase 2 — Core Product
-Application navigation, workflow builder, persistent workflow definitions, validation, versioning, execution history. TODO.
+| Item | Status | Notes |
+|---|---|---|
+| Application navigation | DONE | Top bar with organization switcher and tabs. |
+| Persistent workflow definitions | DONE | Workflows and versions in the database. |
+| Workflow validation | DONE | Server-side, shown live in the editor. |
+| Versioning, immutable after publish | DONE | Enforced by the API and by the ORM. |
+| Publish and activate controls | DONE | Activation only marks a version. Nothing runs yet. |
+| Workflow builder | DONE | Drag and drop, connect, zoom and pan, auto layout, inspector, undo and redo, keyboard shortcuts, save states. |
+| Data mapping | PARTIAL | A mapping list editor exists. There is no field picker, because no runtime data shapes exist yet. |
+| Execution tracing and history | TODO | Needs the execution engine. |
 
 ## Phase 3 — Execution Engine
 Temporal integration, workers, triggers, retries, persisted execution state, recovery. TODO.

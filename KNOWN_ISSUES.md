@@ -23,3 +23,15 @@
 2. `HTTP_422_UNPROCESSABLE_ENTITY` is deprecated in the installed Starlette version.
 3. Docker and `psql` are not installed, so the Docker and PostgreSQL steps cannot run here.
 4. `hermes_dev.db` is a local development database and is git-ignored.
+
+## Phase 2 additions
+1. **Nothing executes.** Marking a version active has no effect. The UI says so. Do not describe the product as running workflows.
+2. **No entitlements on workflows.** There is no limit on workflow count or size beyond the per-document bounds.
+3. **HTTP node safety is structural only.** URLs must be HTTPS and must not point at localhost or private address literals. DNS resolution, redirects, and rebinding need runtime protection in the executor, which does not exist yet.
+4. **Old versions cannot be viewed on the canvas.** The versions list shows them and allows activating a published one. Opening an old graph read-only is not built.
+5. **Field paths are free text.** Conditions and mappings take typed paths such as `order.total`. There is no picker and no check against real data shapes.
+6. **Integration nodes are not tied to connections.** A CRM node names an integration but no connected account exists yet, so no "missing connection" warning is shown.
+7. **Last write wins within one revision check.** Two editors get a conflict message and must reload. There is no merge.
+8. **Builder is not designed for phones.** It stacks and works at tablet width. Dragging on small touch screens is untested.
+9. **OneDrive can lock `web/.next`.** A build failed once with EPERM. Deleting `web/.next` fixed it. Moving the repository out of OneDrive would avoid it.
+10. **The first CI run is still pending.** See the earlier note.

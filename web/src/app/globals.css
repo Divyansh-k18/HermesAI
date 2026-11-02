@@ -157,3 +157,49 @@ body {
 .rise-in {
   animation: rise-in 360ms var(--ease-out) both;
 }
+
+/* React Flow, themed to Hermes tokens. The dark/light selectors outrank the library's color-mode rules. */
+.react-flow,
+.react-flow.dark,
+.react-flow.light {
+  --xy-background-color: var(--bg);
+  --xy-background-pattern-dots-color-default: var(--line-strong);
+  --xy-edge-stroke-default: var(--text-faint);
+  --xy-edge-stroke-selected-default: var(--accent);
+  --xy-edge-label-color-default: var(--text-muted);
+  --xy-edge-label-background-color-default: var(--bg);
+  --xy-minimap-background-color-default: var(--surface-1);
+  --xy-minimap-mask-background-color-default: rgba(11, 12, 14, 0.7);
+  --xy-minimap-node-background-color-default: var(--line-strong);
+  --xy-controls-button-background-color-default: var(--surface-2);
+  --xy-controls-button-background-color-hover-default: var(--surface-3);
+  --xy-controls-button-color-default: var(--text);
+  --xy-controls-button-border-color-default: var(--line);
+  font-family: var(--font-mono);
+}
+
+.react-flow__node {
+  font-family: var(--font-sans);
+}
+
+.react-flow__edge-textbg {
+  fill: var(--bg) !important;
+}
+
+.react-flow__edge-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--text-muted) !important;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.react-flow__controls {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: none;
+}
