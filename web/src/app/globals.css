@@ -203,3 +203,15 @@ body {
   overflow: hidden;
   box-shadow: none;
 }
+
+/* Landing diagram: dashes travel along connections. Reduced-motion users get static dashes. */
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.flow-dash {
+  stroke-dasharray: 4 6;
+  animation: flow-dash 1.4s linear infinite;
+}

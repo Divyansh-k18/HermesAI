@@ -121,7 +121,35 @@ test("login, mobile layout, and sign out", async ({ browser }) => {
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login/);
+  // Signed-out visitors now see the landing page at the home address instead of being redirected.
   await page.goto("/");
-  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByRole("heading", { level: 1, name: "Intelligence in motion." })).toBeVisible();
+  await expect(page).toHaveURL(/127\.0\.0\.1:3100\/$/);
+  await context.close();
+});
+
+test("signed-out visitors see the landing page with clear calls to action", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Intelligence in motion." })).toBeVisible();
+  await expect(page.getByRole("img", { name: /A workflow: an order arrives/ })).toBeVisible();
+  await expect(page.getByText("Working today")).toBeVisible();
+  await expect(page.getByText("Coming next")).toBeVisible();
+  await page.screenshot({ path: "e2e/screenshots/landing-desktop.png", fullPage: true });
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+
+  await page.getByRole("link", { name: "Create an account" }).first().click();
+  await expect(page).toHaveURL(/\/register/);
+});
+
+test("landing page fits a phone screen", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: "e2e/screenshots/landing-mobile.png", fullPage: true });
   await context.close();
 });

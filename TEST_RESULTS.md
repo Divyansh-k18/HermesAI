@@ -98,3 +98,13 @@ Defect found by the browser run: a PowerShell find and replace corrupted non-ASC
 The overview's average run time includes time spent waiting for a person, which can make it large for approval flows.
 
 Still not done: PostgreSQL, security review, accessibility scan, phone layout, and every external integration.
+
+## Final run for this milestone
+
+Backend: **146 passed**. Lint and format checks pass.
+
+Browser tests: **12 tests** (`npm run e2e`). Eleven passed on the first full run and the twelfth failed because it still expected the home page to redirect signed-out visitors to login. The home page now shows a landing page on purpose, so the assertion was updated and the file was rerun. Two new tests cover the landing page at desktop and phone width, including no sideways page scroll.
+
+Reviewed screenshots: landing (desktop and phone), run waiting for approval, run approved, overview with metrics. Fixed from review: the landing diagram hid its branch labels and was unreadable on phones.
+
+The test setup now clears `web/.next` with retries before building, because OneDrive intermittently locks it and fails the build.

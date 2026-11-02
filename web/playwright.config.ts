@@ -28,7 +28,7 @@ export default defineConfig({
     },
     {
       // The API proxy target is read at build time, so it is set for both the build and the server.
-      command: `npm run build && npx next start -p ${WEB_PORT}`,
+      command: `node e2e/clean-next.mjs && npm run build && npx next start -p ${WEB_PORT}`,
       url: `http://127.0.0.1:${WEB_PORT}/login`,
       env: { HERMES_API_URL: `http://127.0.0.1:${API_PORT}` },
       reuseExistingServer: false,

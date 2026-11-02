@@ -12,7 +12,8 @@ Teams design a workflow on a canvas, publish it as a frozen version, and run it.
 - **Execution engine.** Runs the active version, records every step with its input and output, and keeps all state in the database, so a restart loses nothing. Supports trigger, condition, transform, delay, approval, and end steps.
 - **Human approval.** A run pauses at an approval step. Only the role the workflow names can decide. A decision applies once. A rejected run can never finish as succeeded, and the approved path never runs.
 - **Idempotency.** Starting a run with the same key returns the same run.
-- **Operations view.** Real numbers from the database: runs, outcomes by day, waiting approvals, average run time. Plus an audit log of security-relevant actions with trace IDs.
+- **Operations view.** Real numbers from the database: runs, outcomes by day, waiting approvals, average run time. Plus an audit log of security-relevant actions with the person who acted and a trace ID.
+- **Landing page.** Signed-out visitors see what the product does and an honest split of what works today and what comes next.
 
 ## What does not exist yet
 
