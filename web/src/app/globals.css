@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/*
+  Hermes design tokens.
+  Neutral scale is warm-tinted graphite. Cobalt is the single brand accent and is used for
+  interactive emphasis only. Success, warning, and danger carry meaning and are never decorative.
+*/
+:root {
+  --bg: #0b0c0e;
+  --surface-1: #111316;
+  --surface-2: #171a1e;
+  --surface-3: #1e2227;
+  --line: #23272d;
+  --line-strong: #2f343b;
+
+  --text: #ecedef;
+  --text-muted: #9aa0a8;
+  --text-faint: #6b717a;
+
+  --accent: #4f7cff;
+  --accent-strong: #6b92ff;
+  --accent-soft: rgba(79, 124, 255, 0.14);
+  --on-accent: #07090f;
+
+  --success: #4fb286;
+  --warning: #d9a441;
+  --danger: #e5675f;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root[data-theme="light"] {
+  --bg: #f6f5f2;
+  --surface-1: #fbfaf8;
+  --surface-2: #ffffff;
+  --surface-3: #efede9;
+  --line: #e4e1db;
+  --line-strong: #d3cfc7;
+
+  --text: #15171a;
+  --text-muted: #545a63;
+  --text-faint: #858b94;
+
+  --accent: #2f5bea;
+  --accent-strong: #234bd0;
+  --accent-soft: rgba(47, 91, 234, 0.1);
+  --on-accent: #ffffff;
+
+  --success: #2f8a62;
+  --warning: #a8741a;
+  --danger: #c9453d;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+html {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.003em;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Type scale helpers */
+.t-display {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 560;
+}
+
+.t-title {
+  font-size: 1.125rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  font-weight: 560;
+}
+
+.t-label {
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 360ms var(--ease-out) both;
+}

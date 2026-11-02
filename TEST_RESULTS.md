@@ -31,9 +31,13 @@ Command: `uvicorn app.main:create_app --factory --port 8765` against the migrate
 
 Results: `/healthz` returned ok, `/readyz` returned ready, and `POST /api/v1/auth/register` returned 201. The smoke user `smoke.owner@example.com` remains in the local development database.
 
+## Frontend checks
+- `tsc --noEmit`: no errors. `eslint src`: no findings. `next build`: succeeded.
+- Production server (`next start`) plus uvicorn, checked over HTTP: `/login`, `/register`, `/onboarding`, and `/invite` returned 200. Registration through the `/api` proxy returned 201. Creating an organization returned role owner. Listing members returned one member.
+
 ## Not performed
-- Frontend build, browser tests, or Playwright tests.
-- Full HTTP-level organization flow under uvicorn. Covered by the TestClient suite only.
+- Rendering the UI in a browser, screenshots, or Playwright tests. Layout, spacing, and responsive behavior are unreviewed.
+- Frontend unit tests.
 - PostgreSQL migration, backup, or restore.
 - Security scanning beyond ruff's bandit-style rules.
 - Any provider integration. No HubSpot, ERPNext, Gmail, or other sandbox was connected.
