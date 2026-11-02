@@ -11,7 +11,8 @@ A working vertical slice: accounts and teams, a visual workflow builder with ver
 - Approvals: a run pauses at an approval step. Only the role the workflow names can decide. A decision applies once. A rejected run can never finish as succeeded. Members can run workflows but cannot see or decide approvals.
 - Delays resume through a poller that reads the database, so a restart loses nothing.
 - Webhook triggers (`backend/app/routers/webhooks.py`): HMAC-SHA256 signed requests, a five-minute replay window, idempotent event ids, encrypted signing secrets (`backend/app/crypto.py`), rotation, delivery history, and a per-endpoint rate limit. `backend/scripts/send_webhook.py` sends signed test events.
-- `backend/migrations/`: four Alembic migrations. They apply, downgrade, and reapply on SQLite.
+- HTTP step (`backend/app/http_client.py`) and connections (`backend/app/routers/connections.py`): outbound HTTPS calls with SSRF checks, encrypted credential headers, safe retries, and an Integrations page.
+- `backend/migrations/`: five Alembic migrations. They apply, downgrade, and reapply on SQLite.
 - `web/`: Next.js 16 app. Auth, onboarding, invitations, overview with real metrics and a seven-day chart, workflow library with a one-click sample, the builder, a runs list, a run detail page with a step trace, an approvals page, team, and an audit log with actor names.
 - `README.md` and `DEMO.md`: honest scope and a four-minute demo script.
 - `.github/workflows/ci.yml`: backend, web, and browser jobs. Never run on GitHub.

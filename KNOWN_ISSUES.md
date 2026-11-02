@@ -62,3 +62,17 @@ Browser tests start their own backend on port 8100 and web app on port 3100, so 
 5. **The development encryption key lives in `backend/.dev-encryption-key`.** It is git-ignored and created on first use. Deleting it makes existing webhook secrets unreadable, and those webhooks must be rotated. Production refuses to start without `HERMES_CREDENTIAL_ENCRYPTION_KEY`.
 6. **Rejected deliveries are audited, not stored as events.** The audit log records bad signatures and stale timestamps, limited by the rate limiter.
 7. **Locally, the webhook URL is on localhost.** An outside system needs a public address, such as a tunnel or a deployment.
+
+## HTTP step and connections
+1. **DNS rebinding is not fully closed.** The engine resolves the host and refuses private or reserved addresses, then httpx resolves the name again to connect. A hostile DNS server that changes its answer between the two lookups could reach an internal address. Pinning the connection to the checked address is the fix.
+2. **HTTP steps run inside the request that starts or resumes the run.** With retries a slow API can hold that request for about 30 seconds. Moving step execution to background workers removes this.
+3. **POST and PATCH are never retried automatically.** They send an `Idempotency-Key` header of the run id and step id, so a receiving API that honors it can deduplicate a manual retry. APIs that ignore the header may see duplicates if a run is retried by hand.
+4. **A connection holds one header.** OAuth flows, signed requests, and query-string keys are not supported yet.
+5. **Responses are stored in the run's data** (up to 1 MB) and are visible to everyone who can read runs, including viewers. Do not call APIs whose responses contain secrets.
+6. **Only JSON request bodies.** The body is taken from one data path. Form encoding and custom templates are not supported.
+
+## Resolved: occasional "connection reset" through the website proxy
+One browser test failed with `Failed to proxy ... read ECONNRESET`. The likely cause is a keep-alive race: uvicorn closes idle connections after 5 seconds, and the Next.js proxy reuses idle connections for about as long, so a request can be sent on a connection the server is closing. People would see it as a random "Cannot reach the Hermes server" after a short pause. `backend/run.py` now starts the API with a 75 second keep-alive so the proxy always closes first, and the browser tests start the API through the same script. Start the API with `python run.py`, not plain uvicorn.
+
+## Resolved: endless loading when the API is down
+When the API was not running or its database had no tables, the home page and signed-in pages showed a loading placeholder forever. They now show "Hermes can't reach its server" with the usual causes, and forms say "Cannot reach the Hermes server". Confirmed against the real proxy with the API stopped: it answers 500 with a plain-text body, which is what the app detects.

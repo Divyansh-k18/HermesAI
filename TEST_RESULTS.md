@@ -120,3 +120,17 @@ Migration: the fourth migration went up, down, and up again on SQLite.
 Live check against a real uvicorn server with the real `send_webhook.py` script: a large order started a run waiting for approval, resending the same event id returned "duplicate" with the original run, a small order completed on its own, and a wrong secret got 401 with no run.
 
 Browser tests: **13 passed** (12 earlier plus 1 webhook test). The webhook test creates a webhook in the builder, sends signed deliveries through the Next.js proxy, checks the duplicate and forged cases, sees the delivery in the panel, and opens its run.
+
+## HTTP step, connections, and start-up reliability
+
+Backend: **185 passed** (163 earlier plus 22 for the HTTP step and connections). Lint and format checks pass.
+
+HTTP step tests run against a fake network and fake DNS, so nothing leaves the machine. They cover: the response saved for later steps; the connection header sent and absent from the run record; POST bodies taken from the run data with an Idempotency-Key and never retried; GET retried on 5xx with backoff, and giving up after three attempts; private, loopback, link-local, metadata, IPv6 local, and mixed public and private addresses blocked before any request; redirects not followed; 4xx failing the run; responses over 1 MB refused; a missing body field failing before any request; a connection from another organization refused; invalid data paths blocking publish. Connection tests cover encryption at rest, the secret never returned, header validation including header injection, permissions, isolation, CSRF, and audit.
+
+Migration: the fifth migration went up, down, and up again on SQLite.
+
+Browser tests: **16 passed** on the final code. New: the Integrations page stores a connection, masks it, and the HTTP step inspector offers it; an unreachable API shows "Hermes can't reach its server" and recovers on Try again; the login form explains an unreachable API.
+
+The real proxy was checked with the API stopped: it answers 500 with a plain-text body, which is the case the app detects.
+
+One full run had a single `read ECONNRESET` through the proxy during login. After the API was started through `run.py` with a 75 second keep-alive, the sign-in tests passed twice in a row and the full suite passed. A timing race cannot be proven gone from a few runs. The setting removes its known cause.

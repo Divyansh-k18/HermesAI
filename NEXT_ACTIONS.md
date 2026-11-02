@@ -6,7 +6,7 @@ Done so far: identity and teams, workflow builder and versioning, execution engi
 
 1. Push to GitHub and confirm the CI workflow passes. Fix any Windows versus Linux differences.
 2. Rehearse `DEMO.md` end to end on a fresh account.
-3. Add the generic REST connector, which can be tested without a vendor account. Include encrypted credential storage, runtime SSRF protection (resolve DNS, block private addresses, limit redirects), timeouts, and retries. Add an idempotency key header for writes.
+3. Done: the generic HTTP step with encrypted connections, SSRF checks, no redirects, timeouts, safe retries, and idempotency keys on writes. Remaining: pin connections to the checked address (DNS rebinding), and move step execution to background workers.
 4. Done: signed webhook triggers. Next is a HubSpot signature adapter, so a real HubSpot webhook can start a run, and a public address (tunnel or deployment) to receive it.
 5. Add run retry for failed runs and a reconciliation view for uncertain external writes.
 6. Connectors that need accounts from the user: HubSpot and ERPNext sandboxes, a Gmail or SMTP provider. Do not call them verified until a real sandbox test passes.

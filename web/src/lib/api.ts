@@ -189,6 +189,14 @@ export interface ApprovalItem {
   can_decide: boolean;
 }
 
+export interface ConnectionItem {
+  id: string;
+  name: string;
+  kind: string;
+  header_name: string;
+  created_at: string;
+}
+
 export interface WebhookInfo {
   enabled: boolean;
   path: string | null;
@@ -283,10 +291,21 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (!response.ok) {
+    if (response.status >= 500 && payload === null) {
+      // The proxy answered, not the API: the backend is down or unreachable.
+      throw new ApiError(response.status, [SERVER_UNREACHABLE], null);
+    }
     const detail = payload && typeof payload === "object" && "detail" in payload ? (payload as { detail: unknown }).detail : null;
     throw new ApiError(response.status, describeDetail(detail), payload);
   }
   return payload as T;
+}
+
+export const SERVER_UNREACHABLE = "Cannot reach the Hermes server. Make sure the backend is running, then try again.";
+
+/** True when an error means the API could not be reached or failed, rather than refusing a request. */
+export function isServerProblem(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 500;
 }
 
 function adoptAuth(state: AuthState): AuthState {
@@ -382,5 +401,12 @@ export const api = {
   },
   metrics: {
     get: (orgId: string) => request<Metrics>("GET", `/orgs/${orgId}/metrics`),
+  },
+  connections: {
+    list: (orgId: string) => request<ConnectionItem[]>("GET", `/orgs/${orgId}/connections`),
+    create: (orgId: string, input: { name: string; header_name: string; secret: string }) =>
+      request<ConnectionItem>("POST", `/orgs/${orgId}/connections`, input),
+    remove: (orgId: string, connectionId: string) =>
+      request<void>("DELETE", `/orgs/${orgId}/connections/${connectionId}`),
   },
 };

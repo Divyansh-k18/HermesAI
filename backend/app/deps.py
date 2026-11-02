@@ -23,6 +23,8 @@ CSRF_HEADER = "X-CSRF-Token"
 
 def get_db(request: Request) -> Iterator[Session]:
     db: Session = request.app.state.session_factory()
+    # The engine reads settings from the session, for example to decrypt connection secrets.
+    db.info["settings"] = request.app.state.settings
     try:
         yield db
     finally:

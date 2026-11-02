@@ -14,12 +14,16 @@ external system or an AI model fail with a clear message, never silently.
 
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlparse
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app import http_client
+from app.crypto import SecretDecryptionError, decrypt_secret
 from app.models import (
     Approval,
+    Connection,
     StepExecution,
     WorkflowExecution,
     WorkflowVersion,
@@ -28,15 +32,15 @@ from app.models import (
 
 MAX_STEPS = 500
 MAX_PAYLOAD_BYTES = 50_000
+DEFAULT_RESULT_PATH = "http_response"
 
-SUPPORTED_NODE_TYPES = frozenset({"trigger", "condition", "transformation", "delay", "approval", "end"})
+SUPPORTED_NODE_TYPES = frozenset({"trigger", "condition", "transformation", "delay", "approval", "http", "end"})
 UNAVAILABLE_REASON = {
     "ai_agent": "The AI agent step is not available yet.",
     "crm": "CRM steps are not available yet. No CRM integration is connected.",
     "erp": "ERP steps are not available yet. No ERP integration is connected.",
     "database": "Database steps are not available yet.",
     "email": "Email steps are not available yet. No email provider is connected.",
-    "http": "HTTP steps are not available yet.",
 }
 
 
@@ -295,6 +299,9 @@ def _run_node(
         execution.resume_at = resume_at
         return None, {"waiting_seconds": seconds, "resume_at": resume_at.isoformat()}, "timer"
 
+    if kind == "http":
+        return None, _run_http(db, execution, node, config), None
+
     if kind == "approval":
         title = str(config.get("title") or node.get("label") or "Approval needed")[:200]
         approval = Approval(
@@ -453,3 +460,61 @@ def can_decide(user_role: str, approver_role: str) -> bool:
     if user_role == "owner":
         return True
     return user_role == "admin" and approver_role == "admin"
+
+
+def _run_http(db: Session, execution: WorkflowExecution, node: dict, config: dict[str, Any]) -> dict[str, Any]:
+    """Call an outside HTTPS API. Credentials come from an encrypted connection, never from the definition."""
+    method = str(config.get("method", "GET")).upper()
+    url = str(config.get("url", "")).strip()
+    headers = {"User-Agent": "Hermes-Workflow/0.1", "Accept": "application/json"}
+    if method != "GET":
+        # Lets the receiving API recognize a repeated write from the same run and step.
+        headers["Idempotency-Key"] = f"{execution.id}:{node['id']}"
+
+    connection_name = None
+    connection_id = config.get("connection_id")
+    if connection_id:
+        connection = db.scalar(
+            select(Connection).where(
+                Connection.id == str(connection_id), Connection.organization_id == execution.organization_id
+            )
+        )
+        if connection is None:
+            raise EngineError("The connection for this step was not found. It may have been deleted.")
+        settings = db.info.get("settings")
+        if settings is None:
+            raise EngineError("Connection secrets are not available here.")
+        try:
+            headers[connection.header_name] = decrypt_secret(settings, connection.secret_ciphertext)
+        except SecretDecryptionError:
+            raise EngineError(
+                "The connection secret could not be read. Enter it again on the Integrations page."
+            ) from None
+        connection_name = connection.name
+
+    body = None
+    body_path = str(config.get("body_path") or "").strip()
+    if body_path:
+        found, body = lookup(execution.variables, body_path)
+        if not found:
+            raise EngineError(f"The body field “{body_path}” was not found in the data.")
+
+    try:
+        response = http_client.send(method, url, headers, body)
+    except http_client.OutboundError as error:
+        raise EngineError(str(error)) from None
+
+    result_path = str(config.get("result_path") or DEFAULT_RESULT_PATH).strip()
+    updated = dict(execution.variables)
+    assign(updated, result_path, {"status": response.status, "body": response.body})
+    execution.variables = updated
+    # The output never includes headers, so a credential cannot leak into the run trace.
+    return {
+        "method": method,
+        "host": urlparse(url).hostname,
+        "status": response.status,
+        "attempts": response.attempts,
+        "bytes": response.size,
+        "stored_at": result_path,
+        "connection": connection_name,
+    }

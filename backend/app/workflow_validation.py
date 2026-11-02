@@ -8,6 +8,7 @@ Nothing here executes a definition or contacts an external system. Conditions ar
 """
 
 import ipaddress
+import re
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
@@ -18,6 +19,8 @@ from app.workflow_schema import Definition, Node
 CONDITION_OPERATORS = frozenset({"eq", "neq", "gt", "gte", "lt", "lte", "contains", "exists"})
 HTTP_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE"})
 APPROVER_ROLES = frozenset({"owner", "admin"})
+# A dotted data path such as order or response.body.items.
+DATA_PATH = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
 MAX_DELAY_SECONDS = 30 * 24 * 3600
 MAX_INSTRUCTIONS = 4000
 
@@ -247,6 +250,13 @@ def _validate_node_config(node: Node) -> list[Issue]:
         url_problem = _url_problem(_text(config, "url"))
         if url_problem:
             error("invalid_config", url_problem)
+        for key, label in (("body_path", "Send data from"), ("result_path", "Save response as")):
+            value = config.get(key)
+            if value not in (None, "") and not (isinstance(value, str) and DATA_PATH.match(value.strip())):
+                error("invalid_config", f"“{label}” must be a data path such as order or response.body.")
+        connection_id = config.get("connection_id")
+        if connection_id not in (None, "") and not isinstance(connection_id, str):
+            error("invalid_config", "Choose a connection from the list.")
     elif kind == "approval":
         if _text(config, "approver_role") not in APPROVER_ROLES:
             error("missing_config", "Choose which role approves this step (owner or admin).")

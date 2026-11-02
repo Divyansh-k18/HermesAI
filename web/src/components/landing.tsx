@@ -78,6 +78,7 @@ const LIVE = [
   "Visual workflow builder with versions",
   "Execution engine that survives restarts",
   "Human approvals with role checks",
+  "Signed webhooks and HTTP calls to any API",
   "Team roles and organization isolation",
   "Audit log with trace IDs",
 ];

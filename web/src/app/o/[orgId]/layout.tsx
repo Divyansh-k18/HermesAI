@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 
 import { Wordmark } from "@/components/auth-shell";
+import { ServerUnavailable } from "@/components/server-unavailable";
 import { Badge, Button, Skeleton } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, isServerProblem } from "@/lib/api";
 import { useRequireSession, useSignOut } from "@/lib/session";
 
 const NAV = [
@@ -14,6 +15,7 @@ const NAV = [
   { href: "/workflows", label: "Workflows" },
   { href: "/executions", label: "Runs" },
   { href: "/approvals", label: "Approvals", adminOnly: true },
+  { href: "/integrations", label: "Integrations" },
   { href: "/team", label: "Team" },
   { href: "/audit", label: "Audit log" },
 ];
@@ -44,6 +46,18 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const notFound = org.error instanceof ApiError && org.error.status === 404;
   // The workflow builder is a full-bleed workspace rather than a centered page.
   const fullBleed = /\/workflows\/[^/]+$/.test(pathname);
+
+  if (session.isError || isServerProblem(org.error)) {
+    return (
+      <ServerUnavailable
+        error={session.error ?? org.error}
+        onRetry={() => {
+          void session.refetch();
+          void org.refetch();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

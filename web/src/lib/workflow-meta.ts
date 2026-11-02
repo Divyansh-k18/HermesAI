@@ -2,7 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 
 import type { NodeKind, WorkflowDefinition } from "@/lib/api";
 
-export type FieldKind = "text" | "textarea" | "select" | "number" | "scalar" | "list" | "mappings";
+export type FieldKind = "text" | "textarea" | "select" | "number" | "scalar" | "list" | "mappings" | "connection";
 
 export interface FieldDef {
   key: string;
@@ -143,12 +143,38 @@ export const NODE_META: Record<NodeKind, NodeMeta> = {
   },
   http: {
     label: "HTTP request",
-    description: "Calls an external HTTPS API.",
+    description: "Calls an outside HTTPS API and saves the response for later steps.",
     group: "Systems",
     handles: [],
     fields: [
       { key: "method", label: "Method", kind: "select", options: opt("GET", "POST", "PUT", "PATCH", "DELETE") },
-      { key: "url", label: "URL", kind: "text", placeholder: "https://api.example.com/orders", hint: "HTTPS only." },
+      {
+        key: "url",
+        label: "URL",
+        kind: "text",
+        placeholder: "https://api.example.com/orders",
+        hint: "HTTPS only. Private and internal addresses are blocked, and redirects are not followed.",
+      },
+      {
+        key: "connection_id",
+        label: "Connection",
+        kind: "connection",
+        hint: "Adds a stored credential header. Manage connections on the Integrations page.",
+      },
+      {
+        key: "body_path",
+        label: "Send data from",
+        kind: "text",
+        placeholder: "order",
+        hint: "Optional. Sends this part of the run data as the JSON body.",
+      },
+      {
+        key: "result_path",
+        label: "Save response as",
+        kind: "text",
+        placeholder: "http_response",
+        hint: "Later steps can read the status and body from here.",
+      },
     ],
   },
   approval: {

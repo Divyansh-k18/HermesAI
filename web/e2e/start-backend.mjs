@@ -26,10 +26,11 @@ if (migrate.status !== 0) process.exit(migrate.status ?? 1);
 // Tests use their own ports so they never collide with a developer's running servers.
 const port = process.env.E2E_API_PORT ?? "8100";
 
-const server = spawn(
-  exe("python"),
-  ["-m", "uvicorn", "app.main:create_app", "--factory", "--port", port],
-  { cwd: backend, env, stdio: "inherit" },
-);
+// Same entry point people use (run.py), so the tests cover the real start-up settings.
+const server = spawn(exe("python"), ["run.py", "--no-reload"], {
+  cwd: backend,
+  env: { ...env, HERMES_PORT: port },
+  stdio: "inherit",
+});
 server.on("exit", (code) => process.exit(code ?? 0));
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => server.kill());

@@ -22,6 +22,9 @@ _PERMISSIONS: dict[str, frozenset[str]] = {
     # Approvals can contain business data, so they are visible only to the people who may decide them.
     "approvals:read": frozenset({"owner", "admin"}),
     "approvals:decide": frozenset({"owner", "admin"}),
+    # Everyone may see connection names to pick one in the builder. Secrets are never returned to anyone.
+    "connections:read": frozenset(ROLES),
+    "connections:manage": frozenset({"owner", "admin"}),
 }
 
 

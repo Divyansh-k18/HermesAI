@@ -1,7 +1,11 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
 import { Button, Badge } from "@/components/ui";
-import type { WorkflowIssue } from "@/lib/api";
+import { api, type WorkflowIssue } from "@/lib/api";
 import { NODE_META, type FieldDef, type FlowNode } from "@/lib/workflow-meta";
 
 const inputClass =
@@ -178,6 +182,9 @@ function FieldEditor({
     case "mappings":
       control = <MappingsEditor value={raw} readOnly={readOnly} onChange={onChange} />;
       break;
+    case "connection":
+      control = <ConnectionSelect id={id} value={raw} readOnly={readOnly} onChange={onChange} />;
+      break;
     default:
       control = (
         <input
@@ -198,6 +205,50 @@ function FieldEditor({
       </label>
       {control}
       {field.hint && <p className="text-[11px] text-faint">{field.hint}</p>}
+    </div>
+  );
+}
+
+/** Picks a stored connection by name. Only the id is saved in the workflow, never the secret. */
+function ConnectionSelect({
+  id,
+  value,
+  readOnly,
+  onChange,
+}: {
+  id: string;
+  value: unknown;
+  readOnly: boolean;
+  onChange: (value: unknown) => void;
+}) {
+  const { orgId } = useParams<{ orgId: string }>();
+  const connections = useQuery({ queryKey: ["connections", orgId], queryFn: () => api.connections.list(orgId) });
+  const selected = typeof value === "string" ? value : "";
+  const missing = selected !== "" && connections.data !== undefined && !connections.data.some((c) => c.id === selected);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <select
+        id={id}
+        disabled={readOnly}
+        value={selected}
+        onChange={(event) => onChange(event.target.value || undefined)}
+        className={`${inputClass} h-8`}
+      >
+        <option value="">No connection</option>
+        {connections.data?.map((connection) => (
+          <option key={connection.id} value={connection.id}>
+            {connection.name} ({connection.header_name})
+          </option>
+        ))}
+        {missing && <option value={selected}>Deleted connection</option>}
+      </select>
+      {missing && <p className="text-[11px] text-danger">This connection no longer exists. Runs will fail at this step.</p>}
+      {connections.data?.length === 0 && (
+        <Link href={`/o/${orgId}/integrations`} className="text-[11px] text-accent-strong hover:underline">
+          Add a connection
+        </Link>
+      )}
     </div>
   );
 }

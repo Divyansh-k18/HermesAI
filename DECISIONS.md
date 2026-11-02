@@ -65,3 +65,9 @@ A condition that cannot be evaluated because a field is missing or not a number 
 
 ## D-022: Signed webhooks with encrypted secrets
 Webhook requests are signed with HMAC-SHA256 over the timestamp and raw body, so the body cannot be changed in transit and old requests cannot be replayed outside a five-minute window. The event id is unique per endpoint, which makes delivery idempotent: a sender may retry freely. The server must read the secret back to verify signatures, so it cannot be hashed. It is encrypted with Fernet instead, and the key comes from configuration. Production refuses to start without a key. Bad signatures and stale timestamps get the same response, so a caller learns nothing about which check failed.
+
+## D-023: Credentials live in connections, not in workflows
+An HTTP step refers to a connection by id. The connection holds an encrypted header value that no endpoint returns. Workflow definitions, versions, run traces, and exports therefore never contain a credential, and rotating a key does not require a new workflow version.
+
+## D-024: Outbound requests are deny-by-default
+Steps may call only HTTPS URLs whose every resolved address is public. Redirects are not followed, responses are capped at 1 MB, and requests time out after 10 seconds. Only methods that are safe to repeat are retried. Writes carry an Idempotency-Key so the receiving system can recognize a repeat.

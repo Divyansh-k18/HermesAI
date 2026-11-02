@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Landing } from "@/components/landing";
+import { ServerUnavailable } from "@/components/server-unavailable";
 import { Skeleton } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -25,6 +26,18 @@ export default function Home() {
   }, [orgs.data, router]);
 
   if (session.data === null) return <Landing />;
+  // Without this, an unreachable backend would leave the loading placeholder on screen forever.
+  if (session.isError || orgs.isError) {
+    return (
+      <ServerUnavailable
+        error={session.error ?? orgs.error}
+        onRetry={() => {
+          void session.refetch();
+          if (session.data) void orgs.refetch();
+        }}
+      />
+    );
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-3 px-6">

@@ -402,3 +402,27 @@ class WebhookEvent(Base):
     )
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+
+
+class Connection(Base):
+    """Credentials for calling an outside API. Workflows refer to it by id, so secrets never sit in a definition."""
+
+    __tablename__ = "connections"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_connection_name"),
+        CheckConstraint("kind IN ('http_header')", name="ck_connection_kind"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    kind: Mapped[str] = mapped_column(String(30), default="http_header", nullable=False)
+    # The header that carries the credential, such as Authorization or X-Api-Key.
+    header_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
