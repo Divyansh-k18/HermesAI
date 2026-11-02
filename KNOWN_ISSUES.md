@@ -18,6 +18,7 @@
 5. The audit read endpoint has no date filter or export.
 
 ## Tooling
+0. The CI workflow has never run on GitHub. This repository has no remote. The workflow's YAML parses and each command passed locally on Windows. Linux runner behavior is unverified, including the Python 3.14 setup and the Playwright system dependencies.
 1. Starlette warns that `httpx` with its TestClient is deprecated.
 2. `HTTP_422_UNPROCESSABLE_ENTITY` is deprecated in the installed Starlette version.
 3. Docker and `psql` are not installed, so the Docker and PostgreSQL steps cannot run here.
