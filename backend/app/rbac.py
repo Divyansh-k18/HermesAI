@@ -13,6 +13,10 @@ _PERMISSIONS: dict[str, frozenset[str]] = {
     "members:invite": frozenset({"owner", "admin"}),
     "members:manage": frozenset({"owner", "admin"}),
     "audit:read": frozenset({"owner", "admin"}),
+    "workflows:read": frozenset(ROLES),
+    "workflows:write": frozenset({"owner", "admin", "member"}),
+    # Publishing freezes a version and activating makes it live, so both stay with owners and admins.
+    "workflows:publish": frozenset({"owner", "admin"}),
 }
 
 

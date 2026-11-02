@@ -15,7 +15,7 @@ from sqlalchemy.engine import Engine
 from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory
 from app.ratelimit import SlidingWindowLimiter
-from app.routers import auth, orgs
+from app.routers import auth, orgs, workflows
 
 _SAFE_TRACE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
@@ -83,4 +83,5 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
 
     app.include_router(auth.router)
     app.include_router(orgs.router)
+    app.include_router(workflows.router)
     return app
