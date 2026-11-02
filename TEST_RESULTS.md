@@ -134,3 +134,6 @@ Browser tests: **16 passed** on the final code. New: the Integrations page store
 The real proxy was checked with the API stopped: it answers 500 with a plain-text body, which is the case the app detects.
 
 One full run had a single `read ECONNRESET` through the proxy during login. After the API was started through `run.py` with a 75 second keep-alive, the sign-in tests passed twice in a row and the full suite passed. A timing race cannot be proven gone from a few runs. The setting removes its known cause.
+
+## Port conflict handling
+Browser tests: **17 passed**, including a new test that a 404 from the API address shows the "another program is using the port" explanation. `run.py` was checked against a port held by another process: it exits with code 1 and prints how to use another port.

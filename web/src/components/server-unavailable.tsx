@@ -23,6 +23,17 @@ export function ServerUnavailable({ error, onRetry }: { error: unknown; onRetry:
           machine running Hermes:
         </p>
       </div>
+      {status === 404 && (
+        <div className="border border-warning/40 px-4 py-3 text-[14px]">
+          <p className="font-medium">Another program is probably using the API&apos;s port.</p>
+          <p className="mt-1.5 text-muted">
+            Something answered at the API address, but it is not Hermes. This usually means another project is
+            already running on port 8000, so the Hermes API could not start there. Start the API with{" "}
+            <code className="font-mono text-text">python run.py</code>: it checks the port and explains how to use a
+            different one.
+          </p>
+        </div>
+      )}
       <ol className="flex list-decimal flex-col gap-3 pl-5 text-[14px] text-muted">
         <li>
           The backend is running. In the <code className="font-mono text-text">backend</code> folder, start it and

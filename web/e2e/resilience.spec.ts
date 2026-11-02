@@ -17,6 +17,16 @@ test("an unreachable backend shows a clear message instead of loading forever", 
   await expect(page.getByRole("heading", { level: 1, name: "Intelligence in motion." })).toBeVisible();
 });
 
+test("a different program answering on the API port is explained", async ({ page }) => {
+  // Another web app on port 8000 answers Hermes's paths with its own 404.
+  await page.route("**/api/v1/**", (route) =>
+    route.fulfill({ status: 404, contentType: "application/json", body: '{"detail":"Not Found"}' }),
+  );
+  await page.goto("/");
+  await expect(page.getByText("Another program is probably using the API's port.")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("HTTP 404")).toBeVisible();
+});
+
 test("the login form explains an unreachable backend", async ({ page }) => {
   await page.goto("/login");
   await page.route("**/api/v1/**", (route) => route.fulfill(proxyFailure));

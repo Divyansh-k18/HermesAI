@@ -77,7 +77,8 @@ Run only the last command in each terminal. After pulling new code, run `alembic
 
 ### If it does not load
 
-- **"Hermes can't reach its server":** the API terminal is not running or crashed. Read the error in that terminal.
+- **"Hermes can't reach its server" with HTTP 404:** another program is using port 8000, so a different app answers instead of Hermes. `python run.py` detects this and prints how to use another port. To see what holds the port on Windows, run `netstat -ano | findstr :8000`, then `tasklist /FI "PID eq <number>"`.
+- **"Hermes can't reach its server" with HTTP 500:** the API terminal is not running or crashed. Read the error in that terminal.
 - **`no such table` in the API terminal:** run `alembic upgrade head` in the `backend` folder.
 - **`Address already in use` or port 8000 taken:** stop the other program, or start the API on another port and start the website with `HERMES_API_URL=http://127.0.0.1:<port>` set.
 - **Opening the site from a different device:** use the laptop's own browser at http://localhost:3000. Other devices on the network are not set up.

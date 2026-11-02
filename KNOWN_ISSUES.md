@@ -76,3 +76,6 @@ One browser test failed with `Failed to proxy ... read ECONNRESET`. The likely c
 
 ## Resolved: endless loading when the API is down
 When the API was not running or its database had no tables, the home page and signed-in pages showed a loading placeholder forever. They now show "Hermes can't reach its server" with the usual causes, and forms say "Cannot reach the Hermes server". Confirmed against the real proxy with the API stopped: it answers 500 with a plain-text body, which is what the app detects.
+
+## Resolved: "can't reach its server (HTTP 404)" when port 8000 is taken
+On a machine where another program already uses port 8000, the Hermes API cannot start there, and the other program answers the website's requests with 404. `run.py` now checks the port first and stops with instructions for using another port (`HERMES_PORT` for the API, `HERMES_API_URL` for the website). The error page explains the 404 case. Verified by holding a port with another process: `run.py` exits with code 1 and prints the alternative commands.
