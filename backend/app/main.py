@@ -19,7 +19,7 @@ from app.config import Settings, get_settings
 from app.db import make_engine, make_session_factory
 from app.engine import process_due_timers
 from app.ratelimit import SlidingWindowLimiter
-from app.routers import auth, executions, orgs, workflows
+from app.routers import auth, executions, orgs, webhooks, workflows
 
 _SAFE_TRACE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 logger = logging.getLogger("hermes.scheduler")
@@ -69,6 +69,13 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
     app.state.login_limiter = SlidingWindowLimiter(settings.login_rate_limit, settings.login_rate_window_seconds)
+    # Per-endpoint cap on inbound webhook deliveries.
+    app.state.webhook_limiter = SlidingWindowLimiter(settings.webhook_rate_limit, 60)
+    if settings.is_production:
+        # Fail at startup, not on the first webhook, if secrets cannot be encrypted.
+        from app.crypto import resolve_key
+
+        resolve_key(settings)
 
     app.add_middleware(
         CORSMiddleware,
@@ -119,4 +126,6 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(orgs.router)
     app.include_router(workflows.router)
     app.include_router(executions.router)
+    app.include_router(webhooks.public_router)
+    app.include_router(webhooks.manage_router)
     return app

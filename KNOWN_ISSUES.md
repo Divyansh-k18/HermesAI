@@ -46,10 +46,19 @@ Browser tests start their own backend on port 8100 and web app on port 3100, so 
 1. **The engine is in-process, not Temporal.** All state is in the database and a restart loses nothing, but there is no distributed worker fleet, no automatic retry policy, and no activity timeouts. A crash in the middle of a single step could leave a run stuck as running. There is no reconciliation view yet.
 2. **Delay timers poll every two seconds** from inside the API process. With several API instances each one polls. Claims are atomic, so a delay resumes once, but this has not been load tested.
 3. **Steps needing other systems fail.** CRM, ERP, database, email, HTTP, and AI steps stop the run with "not available yet".
-4. **No webhook or scheduled triggers.** Runs start manually or by API call.
+4. **No scheduled triggers.** Runs start manually, by API call, or by signed webhook (see below).
 5. **No run retry.** A failed run cannot be restarted from the failed step.
 6. **No separation of duties.** The person who starts a run can also approve it if they hold the approver role.
 7. **No approval expiry or reminders.** A pending approval waits indefinitely until decided or the run is cancelled.
 8. **Run payloads are free-form JSON** up to 50 KB. Payload contents are stored as given and shown to approvers.
 9. **Average run time includes waiting for people.**
 10. **Existing local databases need `alembic upgrade head`** after pulling these changes.
+
+## Webhook additions
+1. **One signing scheme.** Hermes verifies its own HMAC-SHA256 format. Vendor formats, such as HubSpot's v3 signature, need an adapter before a real HubSpot webhook can be pointed at Hermes.
+2. **The replay window is five minutes** and relies on the server clock. Within that window, replays are stopped by the event id, which senders must keep unique.
+3. **A failed delivery can be retried with the same event id** after the cause is fixed, such as an inactive workflow. An accepted event id can never start a second run.
+4. **Rate limiting is in-process.** 120 deliveries per minute per endpoint, per API process. Move it to Redis for multiple instances.
+5. **The development encryption key lives in `backend/.dev-encryption-key`.** It is git-ignored and created on first use. Deleting it makes existing webhook secrets unreadable, and those webhooks must be rotated. Production refuses to start without `HERMES_CREDENTIAL_ENCRYPTION_KEY`.
+6. **Rejected deliveries are audited, not stored as events.** The audit log records bad signatures and stale timestamps, limited by the rate limiter.
+7. **Locally, the webhook URL is on localhost.** An outside system needs a public address, such as a tunnel or a deployment.

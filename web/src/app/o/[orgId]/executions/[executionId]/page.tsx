@@ -134,6 +134,8 @@ export default function ExecutionDetailPage() {
           )}
         </div>
         <dl className="mt-4 grid max-w-xl grid-cols-[7rem_1fr] gap-y-1.5 text-[13px]">
+          <dt className="text-faint">Triggered by</dt>
+          <dd className="font-mono text-[12px]">{data.trigger_type}</dd>
           <dt className="text-faint">Started</dt>
           <dd className="font-mono text-[12px]">{formatTime(data.started_at)}</dd>
           <dt className="text-faint">Duration</dt>

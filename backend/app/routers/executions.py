@@ -84,6 +84,7 @@ class ExecutionSummary(BaseModel):
 
 
 class ExecutionDetail(ExecutionSummary):
+    trigger_type: str
     trigger_payload: dict[str, Any]
     variables: dict[str, Any]
     outcome: str | None
@@ -206,6 +207,7 @@ def _detail(db: Session, execution: WorkflowExecution, role: str) -> ExecutionDe
     )
     return ExecutionDetail(
         **_summary(execution, name).model_dump(),
+        trigger_type=execution.trigger_type,
         trigger_payload=execution.trigger_payload,
         variables=execution.variables,
         outcome=execution.outcome,

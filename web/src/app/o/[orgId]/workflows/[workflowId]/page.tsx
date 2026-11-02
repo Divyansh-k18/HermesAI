@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "@/components/workflow/inspector";
 import { NodeCard } from "@/components/workflow/node-card";
 import { RunDialog } from "@/components/workflow/run-dialog";
+import { WebhookPanel } from "@/components/workflow/webhook-panel";
 import { payloadTemplate } from "@/lib/sample-workflow";
 import { Badge, Button, EmptyState, Skeleton } from "@/components/ui";
 import {
@@ -863,10 +864,11 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
                 )}
                 <p className="mt-3 text-[11px] leading-snug text-faint">
                   Published versions are frozen. Editing a published workflow creates a new draft when you save.
-                  Activation marks the version that will receive events. Event execution is not built yet, so
-                  nothing runs today.
+                  New runs always use the active version. A run in progress stays on the version it started with.
                 </p>
               </section>
+
+              {canPublish && <WebhookPanel orgId={orgId} workflowId={workflowId} />}
             </div>
           )}
         </aside>

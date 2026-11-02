@@ -108,3 +108,15 @@ Browser tests: **12 tests** (`npm run e2e`). Eleven passed on the first full run
 Reviewed screenshots: landing (desktop and phone), run waiting for approval, run approved, overview with metrics. Fixed from review: the landing diagram hid its branch labels and was unreadable on phones.
 
 The test setup now clears `web/.next` with retries before building, because OneDrive intermittently locks it and fails the build.
+
+## Webhook triggers
+
+Backend: **163 passed** (146 earlier plus 17 webhook tests). Lint and format checks pass, including `backend/scripts`.
+
+Webhook tests cover: the secret shown once; a signed delivery starting a run with trigger type "webhook"; a repeated event returning the same run with one run in the database; bad signatures refused and audited; a tampered body refused; timestamps five minutes old or in the future refused with the same message as a bad secret; missing or malformed headers; unknown endpoints; non-object and oversized bodies; secret rotation invalidating the old secret; deletion; an event refused for an inactive workflow and accepted on retry after activation; the secret stored encrypted; only owners and admins managing webhooks, with tenant isolation; CSRF on management; the per-endpoint rate limit; and production refusing to start without an encryption key.
+
+Migration: the fourth migration went up, down, and up again on SQLite.
+
+Live check against a real uvicorn server with the real `send_webhook.py` script: a large order started a run waiting for approval, resending the same event id returned "duplicate" with the original run, a small order completed on its own, and a wrong secret got 401 with no run.
+
+Browser tests: **13 passed** (12 earlier plus 1 webhook test). The webhook test creates a webhook in the builder, sends signed deliveries through the Next.js proxy, checks the duplicate and forged cases, sees the delivery in the panel, and opens its run.

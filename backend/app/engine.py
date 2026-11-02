@@ -146,6 +146,7 @@ def start_execution(
     started_by_user_id: str | None,
     idempotency_key: str | None,
     trace_id: str | None,
+    trigger_type: str = "manual",
 ) -> WorkflowExecution:
     nodes, _ = _graph(version)
     trigger = next((n for n in nodes.values() if n["type"] == "trigger"), None)
@@ -158,7 +159,7 @@ def start_execution(
         version_id=version.id,
         version_number=version.version_number,
         status="running",
-        trigger_type="manual",
+        trigger_type=trigger_type,
         trigger_payload=payload,
         variables=dict(payload),
         current_node_id=trigger["id"],

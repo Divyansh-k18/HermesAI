@@ -1,4 +1,5 @@
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
@@ -41,6 +42,8 @@ def settings():
         login_rate_limit=100,
         login_rate_window_seconds=900,
         scheduler_enabled=False,
+        # A throwaway key per test, so tests never touch the developer's key file.
+        credential_encryption_key=Fernet.generate_key().decode("ascii"),
     )
 
 

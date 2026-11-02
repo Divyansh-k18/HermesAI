@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # Resumes runs whose delay has elapsed. Disabled in unit tests, which call the engine directly.
     scheduler_enabled: bool = True
     scheduler_interval_seconds: float = 2.0
+    webhook_rate_limit: int = 120  # deliveries per endpoint per minute
     login_rate_limit: int = 10
     login_rate_window_seconds: int = 900
 

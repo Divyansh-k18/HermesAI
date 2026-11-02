@@ -40,7 +40,7 @@ Conditions are a field, an operator from a fixed list, and a value. There is no 
 Saving stores whatever the user has so work is never lost, and returns the issues. Publishing re-validates on the server and refuses any error. Publishing also requires the revision the user reviewed, so a stale view cannot publish unseen changes.
 
 ## D-014: "Active", not "live"
-Activation only marks which published version will receive events. Because no execution engine exists, the interface says "active" and states that nothing runs yet.
+Activation marks which published version receives new runs. The word "active" was chosen when no execution engine existed, so the interface would not overstate. The engine now exists (D-016), and "active" still describes it accurately: new runs and webhook deliveries use that version.
 
 ## D-015: Builder views fit to a readable zoom
 Wide graphs keep at least 60 percent zoom and anchor at the trigger, so text stays legible. The Controls fit button still fits everything.
@@ -62,3 +62,6 @@ Approval context can contain business data. Only owners and admins see and decid
 
 ## D-021: Conditions fail closed
 A condition that cannot be evaluated because a field is missing or not a number fails the run with a visible error. It never silently picks a branch.
+
+## D-022: Signed webhooks with encrypted secrets
+Webhook requests are signed with HMAC-SHA256 over the timestamp and raw body, so the body cannot be changed in transit and old requests cannot be replayed outside a five-minute window. The event id is unique per endpoint, which makes delivery idempotent: a sender may retry freely. The server must read the secret back to verify signatures, so it cannot be hashed. It is encrypted with Fernet instead, and the key comes from configuration. Production refuses to start without a key. Bad signatures and stale timestamps get the same response, so a caller learns nothing about which check failed.

@@ -42,6 +42,15 @@ Say: "The run is parked in the database. Restart the server and it is still here
 
 Say: "A rejected order can never be treated as approved, by design."
 
+## Optional: an event from another system (45 seconds)
+
+1. In the builder's right panel (click empty canvas first), click **Create webhook**.
+2. Copy the "Send a test event" command and run it in a terminal from the `backend` folder.
+3. The panel lists the delivery. Click **run** to open it. "Triggered by" shows **webhook**, and it waits for approval.
+4. Run the same command again with `--event-id` set to the id it printed. The answer is "duplicate" and no second run starts.
+
+Say: "This is how a CRM would start the flow. Every request is signed, old requests are refused, and the same event never runs twice."
+
 ## 6. Show the controls and the record (45 seconds)
 
 - Open **Overview**: real counts and the seven-day chart.
@@ -50,7 +59,7 @@ Say: "A rejected order can never be treated as approved, by design."
 
 ## Questions to expect
 
-- **Is it connected to HubSpot, ERPNext, or Gmail?** Not yet. Those steps exist in the builder and fail with a clear message. The connector framework and encrypted credential storage are next.
+- **Is it connected to HubSpot, ERPNext, or Gmail?** Not yet. Those steps exist in the builder and fail with a clear message. Any system can already start a workflow through a signed webhook, and secrets are stored encrypted. The vendor connectors are next.
 - **Does it use Temporal?** Not yet. The engine keeps all state in the database and is built with the same step boundaries, so moving to Temporal is a change of runner, not of design.
 - **Is it secure?** The foundations are in place: server-side sessions, CSRF, organization isolation, role checks on every action, hashed tokens, and an audit trail. No formal security review has been done.
 - **Where is the AI?** Not built yet. The agent step is reserved and fails clearly. Approvals and policy checks come first so AI can be added safely.

@@ -351,3 +351,54 @@ class Approval(Base):
     )
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     comment: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
+class WebhookEndpoint(Base):
+    """An inbound webhook for one workflow. The signing secret is stored encrypted, never in plaintext."""
+
+    __tablename__ = "webhook_endpoints"
+    __table_args__ = (
+        UniqueConstraint("workflow_id", name="uq_webhook_workflow"),
+        UniqueConstraint("public_id", name="uq_webhook_public_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    workflow_id: Mapped[str] = mapped_column(String(36), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False)
+    # Unguessable path segment. It identifies the endpoint but grants nothing without a valid signature.
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_received_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WebhookEvent(Base):
+    """One delivery attempt. The unique event id per endpoint is what makes deliveries idempotent."""
+
+    __tablename__ = "webhook_events"
+    __table_args__ = (
+        UniqueConstraint("endpoint_id", "event_id", name="uq_webhook_event"),
+        CheckConstraint("status IN ('accepted', 'failed')", name="ck_webhook_event_status"),
+        Index("ix_webhook_events_endpoint_received", "endpoint_id", "received_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    endpoint_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False
+    )
+    event_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    execution_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("workflow_executions.id", ondelete="SET NULL"), nullable=True
+    )
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)

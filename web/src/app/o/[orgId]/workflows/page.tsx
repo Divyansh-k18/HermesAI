@@ -69,7 +69,7 @@ export default function WorkflowLibraryPage() {
         <h1 className="t-title mt-3 text-2xl">Workflow library</h1>
         <p className="mt-1.5 max-w-xl text-muted">
           Each workflow is a graph of steps. Drafts are editable. Published versions are frozen, and one version at a
-          time can be marked active. Running workflows on real events is not built yet.
+          time is active. Runs start manually or from a signed webhook.
         </p>
       </header>
 

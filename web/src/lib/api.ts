@@ -189,7 +189,28 @@ export interface ApprovalItem {
   can_decide: boolean;
 }
 
+export interface WebhookInfo {
+  enabled: boolean;
+  path: string | null;
+  created_at: string | null;
+  rotated_at: string | null;
+  last_received_at: string | null;
+}
+
+export interface WebhookSecret extends WebhookInfo {
+  secret: string;
+}
+
+export interface WebhookEventItem {
+  event_id: string;
+  status: "accepted" | "failed";
+  execution_id: string | null;
+  error: string | null;
+  received_at: string;
+}
+
 export interface ExecutionDetail extends ExecutionSummary {
+  trigger_type: string;
   trigger_payload: Record<string, unknown>;
   variables: Record<string, unknown>;
   outcome: string | null;
@@ -329,6 +350,14 @@ export const api = {
       request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}`),
     version: (orgId: string, workflowId: string, versionNumber: number) =>
       request<WorkflowVersion>("GET", `/orgs/${orgId}/workflows/${workflowId}/versions/${versionNumber}`),
+    webhook: (orgId: string, workflowId: string) =>
+      request<WebhookInfo>("GET", `/orgs/${orgId}/workflows/${workflowId}/webhook`),
+    createOrRotateWebhook: (orgId: string, workflowId: string) =>
+      request<WebhookSecret>("POST", `/orgs/${orgId}/workflows/${workflowId}/webhook`),
+    deleteWebhook: (orgId: string, workflowId: string) =>
+      request<void>("DELETE", `/orgs/${orgId}/workflows/${workflowId}/webhook`),
+    webhookEvents: (orgId: string, workflowId: string) =>
+      request<WebhookEventItem[]>("GET", `/orgs/${orgId}/workflows/${workflowId}/webhook/events`),
     run: (orgId: string, workflowId: string, input: { payload: Record<string, unknown>; idempotency_key?: string }) =>
       request<ExecutionDetail>("POST", `/orgs/${orgId}/workflows/${workflowId}/executions`, input),
   },

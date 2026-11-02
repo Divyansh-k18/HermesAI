@@ -11,7 +11,8 @@ Teams design a workflow on a canvas, publish it as a frozen version, and run it.
 - **Versioning.** Drafts are editable. Published versions are frozen at both the API and the database layer. One version at a time is active.
 - **Execution engine.** Runs the active version, records every step with its input and output, and keeps all state in the database, so a restart loses nothing. Supports trigger, condition, transform, delay, approval, and end steps.
 - **Human approval.** A run pauses at an approval step. Only the role the workflow names can decide. A decision applies once. A rejected run can never finish as succeeded, and the approved path never runs.
-- **Idempotency.** Starting a run with the same key returns the same run.
+- **Webhook triggers.** Another system can start a workflow with a signed HTTP request. Signatures use HMAC-SHA256, requests older than five minutes are refused, a repeated event returns the original run, and the signing secret is stored encrypted and shown once. `backend/scripts/send_webhook.py` sends a signed test event.
+- **Idempotency.** Starting a run with the same key, or delivering the same webhook event twice, returns the same run.
 - **Operations view.** Real numbers from the database: runs, outcomes by day, waiting approvals, average run time. Plus an audit log of security-relevant actions with the person who acted and a trace ID.
 - **Landing page.** Signed-out visitors see what the product does and an honest split of what works today and what comes next.
 
@@ -22,7 +23,7 @@ Be clear about this when presenting.
 - No external integrations. HubSpot, ERPNext, Gmail, PostgreSQL, and REST steps are in the builder, but running them fails with a clear "not available yet" message.
 - No AI steps and no natural-language workflow creation.
 - The engine is database-backed and in-process. It is not Temporal.
-- No webhook triggers yet. Runs start manually or through the API.
+- Webhooks are generic, signed by Hermes's own scheme. There is no HubSpot-specific signature check yet, and no scheduled triggers.
 - No billing, usage limits, account recovery, or email delivery.
 - Tested on SQLite. PostgreSQL has not been run.
 - This is not production-ready. No security review has been done.
