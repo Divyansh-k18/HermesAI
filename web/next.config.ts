@@ -3,10 +3,11 @@ import type { NextConfig } from "next";
 const backendUrl = process.env.HERMES_API_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
-  // Tailwind v4 is compiled by its Turbopack loader (this is what create-next-app generated).
+  // Tailwind v4 is compiled by its Turbopack loader. It applies only to our own stylesheet, so it never
+  // touches generated font CSS or library CSS.
   turbopack: {
     rules: {
-      "*.css": {
+      "globals.css": {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },

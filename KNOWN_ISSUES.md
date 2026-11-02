@@ -35,3 +35,9 @@
 8. **Builder is not designed for phones.** It stacks and works at tablet width. Dragging on small touch screens is untested.
 9. **OneDrive can lock `web/.next`.** A build failed once with EPERM. Deleting `web/.next` fixed it. Moving the repository out of OneDrive would avoid it.
 10. **The first CI run is still pending.** See the earlier note.
+
+## Resolved: dev server build error on fonts
+`next dev` failed with "Can't resolve @vercel/turbopack-next/internal/font/google/font" and a 500 on every page. The dev server downloaded Geist from Google Fonts on each request, and that download fails on unreliable networks. Fonts now come from the bundled `geist` package, so nothing is fetched. The Tailwind loader rule in `web/next.config.ts` also now applies only to `globals.css`, not to generated font CSS.
+
+## Test servers use separate ports
+Browser tests start their own backend on port 8100 and web app on port 3100, so they no longer collide with a developer's servers on 8000 and 3000. They still build into `web/.next`, so stop `npm run dev` before running them.

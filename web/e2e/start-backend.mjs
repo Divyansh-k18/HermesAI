@@ -23,9 +23,12 @@ const env = {
 const migrate = spawnSync(exe("alembic"), ["upgrade", "head"], { cwd: backend, env, stdio: "inherit" });
 if (migrate.status !== 0) process.exit(migrate.status ?? 1);
 
+// Tests use their own ports so they never collide with a developer's running servers.
+const port = process.env.E2E_API_PORT ?? "8100";
+
 const server = spawn(
   exe("python"),
-  ["-m", "uvicorn", "app.main:create_app", "--factory", "--port", "8000"],
+  ["-m", "uvicorn", "app.main:create_app", "--factory", "--port", port],
   { cwd: backend, env, stdio: "inherit" },
 );
 server.on("exit", (code) => process.exit(code ?? 0));
