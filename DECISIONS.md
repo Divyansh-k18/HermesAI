@@ -83,3 +83,6 @@ The AI step only turns free-form text into a structured order. It cannot approve
 
 ## D-028: Provider-neutral AI through the OpenAI-compatible API
 One small httpx client talks to any `/chat/completions` endpoint, so the team can use free tiers (Groq, Google AI Studio) for the demo and switch providers by changing three settings. The key lives only in `backend/.env`; the status endpoint reports whether AI is configured, never the key.
+
+## D-029: Stock checks are deterministic and fail toward a person
+The Check stock step does not use the AI. It matches order lines to inventory items by their words, ignoring case, plurals, and packaging words. An item that matches nothing, has no quantity, or is short is never treated as available, so the order reaches a person. Matching is shown in the run (which inventory item each line matched), so a wrong match is visible. Stock is not reserved or deducted yet, because that must happen only after approval and exactly once.

@@ -14,6 +14,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -457,3 +458,25 @@ class EmailInbox(Base):
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+
+
+class InventoryItem(Base):
+    """Stock an organization holds. The Check stock step compares order lines with it."""
+
+    __tablename__ = "inventory_items"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_inventory_name"),
+        CheckConstraint("quantity >= 0", name="ck_inventory_quantity"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    sku: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    unit: Mapped[str] = mapped_column(String(30), default="unit", nullable=False)
+    unit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)

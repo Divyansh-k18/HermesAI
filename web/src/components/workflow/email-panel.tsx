@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Button, FormError } from "@/components/ui";
-import { formatTime } from "@/components/status";
+import { ExecutionStatusBadge, formatTime } from "@/components/status";
 import { ApiError, api, type EmailCheckResult } from "@/lib/api";
 
 const inputClass =
@@ -39,6 +39,8 @@ export function EmailInboxPanel({
   const info = useQuery({
     queryKey: ["email-inbox", orgId, workflowId],
     queryFn: () => api.workflows.emailInbox(orgId, workflowId),
+    // While a mailbox is connected, refresh so new emails appear here without reloading the page.
+    refetchInterval: (query) => (query.state.data?.enabled ? 10_000 : false),
   });
   const [editing, setEditing] = useState(false);
   const [host, setHost] = useState("imap.gmail.com");
@@ -188,7 +190,7 @@ export function EmailInboxPanel({
             <p className="text-[11px] text-warning">Anyone who emails this address can start a run.</p>
           )}
           <p className="text-[11px] text-faint">
-            Checked automatically every minute
+            Checked automatically every few seconds
             {info.data?.last_checked_at ? ` · last ${formatTime(info.data.last_checked_at)}` : ""} ·{" "}
             {info.data?.runs_started ?? 0} order{info.data?.runs_started === 1 ? "" : "s"} started
           </p>
@@ -209,6 +211,29 @@ export function EmailInboxPanel({
                 </>
               )}
             </p>
+          )}
+          {info.data && info.data.recent_emails.length > 0 && (
+            <div>
+              <p className="t-label mb-1.5">Recent emails</p>
+              <ul className="border border-line" aria-label="Recent emails">
+                {info.data.recent_emails.map((mail) => (
+                  <li key={mail.run_id} className="border-b border-line last:border-0">
+                    <Link
+                      href={`/o/${orgId}/executions/${mail.run_id}`}
+                      className="flex items-center justify-between gap-2 px-2.5 py-2 hover:bg-surface-2"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-medium">{mail.subject || "(no subject)"}</span>
+                        <span className="block truncate text-[11px] text-faint">
+                          {mail.sender ?? "unknown sender"} · {formatTime(mail.received_at)}
+                        </span>
+                      </span>
+                      <ExecutionStatusBadge status={mail.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => checkNow.mutate()} loading={checkNow.isPending}>

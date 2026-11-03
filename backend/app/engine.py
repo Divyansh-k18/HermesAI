@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from app import ai, http_client
 from app.crypto import SecretDecryptionError, decrypt_secret
+from app.inventory import check_stock
 from app.models import (
     Approval,
     Connection,
@@ -35,7 +36,7 @@ MAX_PAYLOAD_BYTES = 50_000
 DEFAULT_RESULT_PATH = "http_response"
 
 SUPPORTED_NODE_TYPES = frozenset(
-    {"trigger", "condition", "transformation", "delay", "approval", "http", "ai_agent", "end"}
+    {"trigger", "condition", "transformation", "delay", "approval", "http", "ai_agent", "inventory", "end"}
 )
 AI_TASKS = frozenset({"extract_order"})
 UNAVAILABLE_REASON = {
@@ -307,6 +308,9 @@ def _run_node(
     if kind == "ai_agent":
         return None, _run_ai(db, execution, config), None
 
+    if kind == "inventory":
+        return None, _run_stock_check(db, execution, config), None
+
     if kind == "approval":
         title = str(config.get("title") or node.get("label") or "Approval needed")[:200]
         approval = Approval(
@@ -563,5 +567,24 @@ def _run_ai(db: Session, execution: WorkflowExecution, config: dict[str, Any]) -
         "confidence": order["confidence"],
         "total": order["total"],
         "total_source": order["total_source"],
+        "stored_at": result_path,
+    }
+
+
+def _run_stock_check(db: Session, execution: WorkflowExecution, config: dict[str, Any]) -> dict[str, Any]:
+    """Compare the order's lines with the organization's inventory and store the result for later conditions."""
+    items_path = str(config.get("items_path") or "order.items").strip()
+    found, lines = lookup(execution.variables, items_path)
+    if not found or not isinstance(lines, list):
+        raise EngineError(f"There is no list of order lines at {items_path}.")
+    result = check_stock(db, execution.organization_id, lines)
+    result_path = str(config.get("result_path") or "stock").strip()
+    updated = dict(execution.variables)
+    assign(updated, result_path, result)
+    execution.variables = updated
+    return {
+        "status": result["status"],
+        "lines_checked": len(result["lines"]),
+        "problems": result["problems"],
         "stored_at": result_path,
     }

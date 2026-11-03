@@ -105,7 +105,8 @@ export const SAMPLE_AI_EMAIL_WORKFLOW_NAME = "AI email order approval (sample)";
 
 /**
  * Customers write orders in their own words. The AI step reads the email into a structured order; plain rules
- * then decide. Unclear emails go to a person, large orders go to a manager, and small clear orders finish.
+ * then decide. Unclear emails go to a person, items short in stock go to a person, large orders go to a manager,
+ * and small clear orders finish.
  */
 export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
   nodes: [
@@ -132,47 +133,83 @@ export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
       config: { field: "order.confidence", operator: "gte", value: 0.6 },
     },
     {
+      id: "stock",
+      type: "inventory",
+      label: "Check stock",
+      position: { x: 1120, y: -20 },
+      config: { items_path: "order.items", result_path: "stock" },
+    },
+    {
+      id: "available",
+      type: "condition",
+      label: "All items in stock?",
+      position: { x: 1400, y: -20 },
+      config: { field: "stock.status", operator: "eq", value: "in_stock" },
+    },
+    {
       id: "big",
       type: "condition",
       label: "Order over ₹50,000?",
-      position: { x: 1120, y: -20 },
+      position: { x: 1680, y: -100 },
       config: { field: "order.total", operator: "gt", value: 50000 },
     },
     {
       id: "manager",
       type: "approval",
       label: "Manager approval",
-      position: { x: 1400, y: -120 },
+      position: { x: 1960, y: -200 },
       config: { approver_role: "admin", title: "Approve large order read by AI" },
+    },
+    {
+      id: "shortage",
+      type: "approval",
+      label: "Stock problem",
+      position: { x: 1680, y: 120 },
+      config: { approver_role: "admin", title: "Some items are short: accept as backorder?" },
     },
     {
       id: "review",
       type: "approval",
       label: "Person checks the email",
-      position: { x: 1120, y: 300 },
+      position: { x: 1120, y: 320 },
       config: { approver_role: "admin", title: "Check unclear order email" },
     },
-    { id: "approved", type: "end", label: "Approved", position: { x: 1680, y: -180 }, config: {} },
-    { id: "rejected", type: "end", label: "Rejected", position: { x: 1680, y: -40 }, config: {} },
-    { id: "auto", type: "end", label: "Auto-approved (small order)", position: { x: 1400, y: 100 }, config: {} },
-    { id: "confirmed", type: "end", label: "Confirmed after review", position: { x: 1400, y: 240 }, config: {} },
-    { id: "declined", type: "end", label: "Not an order", position: { x: 1400, y: 380 }, config: {} },
+    { id: "approved", type: "end", label: "Approved", position: { x: 2240, y: -260 }, config: {} },
+    { id: "rejected", type: "end", label: "Rejected", position: { x: 2240, y: -130 }, config: {} },
+    { id: "auto", type: "end", label: "Auto-approved (small order)", position: { x: 1960, y: 0 }, config: {} },
+    { id: "backorder", type: "end", label: "Accepted as backorder", position: { x: 1960, y: 120 }, config: {} },
+    { id: "nostock", type: "end", label: "Declined: no stock", position: { x: 1960, y: 240 }, config: {} },
+    { id: "confirmed", type: "end", label: "Confirmed after review", position: { x: 1400, y: 280 }, config: {} },
+    { id: "declined", type: "end", label: "Not an order", position: { x: 1400, y: 400 }, config: {} },
   ],
   edges: [
     { id: "e1", source: "trigger", target: "ai", source_handle: null, label: "" },
     { id: "e2", source: "ai", target: "found", source_handle: null, label: "" },
     { id: "e3", source: "found", target: "sure", source_handle: "true", label: "true" },
     { id: "e4", source: "found", target: "review", source_handle: "false", label: "false" },
-    { id: "e5", source: "sure", target: "big", source_handle: "true", label: "true" },
+    { id: "e5", source: "sure", target: "stock", source_handle: "true", label: "true" },
     { id: "e6", source: "sure", target: "review", source_handle: "false", label: "false" },
-    { id: "e7", source: "big", target: "manager", source_handle: "true", label: "true" },
-    { id: "e8", source: "big", target: "auto", source_handle: "false", label: "false" },
-    { id: "e9", source: "manager", target: "approved", source_handle: "approved", label: "approved" },
-    { id: "e10", source: "manager", target: "rejected", source_handle: "rejected", label: "rejected" },
-    { id: "e11", source: "review", target: "confirmed", source_handle: "approved", label: "approved" },
-    { id: "e12", source: "review", target: "declined", source_handle: "rejected", label: "rejected" },
+    { id: "e7", source: "stock", target: "available", source_handle: null, label: "" },
+    { id: "e8", source: "available", target: "big", source_handle: "true", label: "true" },
+    { id: "e9", source: "available", target: "shortage", source_handle: "false", label: "false" },
+    { id: "e10", source: "big", target: "manager", source_handle: "true", label: "true" },
+    { id: "e11", source: "big", target: "auto", source_handle: "false", label: "false" },
+    { id: "e12", source: "manager", target: "approved", source_handle: "approved", label: "approved" },
+    { id: "e13", source: "manager", target: "rejected", source_handle: "rejected", label: "rejected" },
+    { id: "e14", source: "shortage", target: "backorder", source_handle: "approved", label: "approved" },
+    { id: "e15", source: "shortage", target: "nostock", source_handle: "rejected", label: "rejected" },
+    { id: "e16", source: "review", target: "confirmed", source_handle: "approved", label: "approved" },
+    { id: "e17", source: "review", target: "declined", source_handle: "rejected", label: "rejected" },
   ],
 };
+
+/** Stock that matches the sample email: 50 boxes of A4 paper and 20 packs of pens come to exactly ₹78,000. */
+export const SAMPLE_STOCK = [
+  { name: "A4 Paper", quantity: 200, unit: "box", unit_price: 1200 },
+  { name: "Blue Pen", quantity: 100, unit: "pack", unit_price: 900 },
+  { name: "Stapler", quantity: 5, unit: "piece", unit_price: 350 },
+  { name: "Printer Ink", quantity: 0, unit: "cartridge", unit_price: 2500 },
+];
 
 /** A realistic order written in a customer's own words, used to prefill runs of workflows with an AI step. */
 export const SAMPLE_ORDER_EMAIL =

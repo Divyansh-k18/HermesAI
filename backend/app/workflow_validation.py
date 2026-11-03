@@ -266,6 +266,11 @@ def _validate_node_config(node: Node) -> list[Issue]:
         connection_id = config.get("connection_id")
         if connection_id not in (None, "") and not isinstance(connection_id, str):
             error("invalid_config", "Choose a connection from the list.")
+    elif kind == "inventory":
+        for key, label in (("items_path", "Order lines from"), ("result_path", "Save result as")):
+            value = config.get(key)
+            if value not in (None, "") and not (isinstance(value, str) and DATA_PATH.match(value.strip())):
+                error("invalid_config", f"“{label}” must be a data path such as order.items or stock.")
     elif kind == "approval":
         if _text(config, "approver_role") not in APPROVER_ROLES:
             error("missing_config", "Choose which role approves this step (owner or admin).")

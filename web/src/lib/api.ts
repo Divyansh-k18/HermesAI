@@ -69,6 +69,7 @@ export type NodeKind =
   | "database"
   | "email"
   | "http"
+  | "inventory"
   | "approval"
   | "delay"
   | "end";
@@ -198,6 +199,26 @@ export interface EmailInboxInfo {
   last_checked_at: string | null;
   last_error: string | null;
   runs_started: number;
+  recent_emails: RecentEmail[];
+}
+
+/** An email that started a run. */
+export interface RecentEmail {
+  run_id: string;
+  received_at: string;
+  sender: string | null;
+  subject: string | null;
+  status: ExecutionStatus;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  unit: string;
+  unit_price: number | null;
+  updated_at: string;
 }
 
 export interface EmailCheckResult {
@@ -448,5 +469,15 @@ export const api = {
   },
   ai: {
     status: () => request<AIStatus>("GET", "/ai/status"),
+  },
+  inventory: {
+    list: (orgId: string) => request<InventoryItem[]>("GET", `/orgs/${orgId}/inventory`),
+    create: (
+      orgId: string,
+      input: { name: string; quantity: number; unit?: string; unit_price?: number | null; sku?: string | null },
+    ) => request<InventoryItem>("POST", `/orgs/${orgId}/inventory`, input),
+    update: (orgId: string, itemId: string, input: Partial<Omit<InventoryItem, "id" | "updated_at">>) =>
+      request<InventoryItem>("PATCH", `/orgs/${orgId}/inventory/${itemId}`, input),
+    remove: (orgId: string, itemId: string) => request<void>("DELETE", `/orgs/${orgId}/inventory/${itemId}`),
   },
 };

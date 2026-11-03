@@ -27,6 +27,8 @@ function summarize(node: FlowNode["data"]): string {
       return text("subject");
     case "http":
       return text("url") ? `${text("method")} ${text("url")}` : "";
+    case "inventory":
+      return `check ${text("items_path") || "order.items"} against stock`;
     case "approval":
       return text("approver_role") ? `approver: ${text("approver_role")}` : "";
     case "delay":

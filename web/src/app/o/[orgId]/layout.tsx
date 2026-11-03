@@ -16,6 +16,7 @@ const NAV = [
   { href: "/workflows", label: "Workflows" },
   { href: "/executions", label: "Runs" },
   { href: "/approvals", label: "Approvals", adminOnly: true },
+  { href: "/inventory", label: "Inventory" },
   { href: "/integrations", label: "Integrations" },
   { href: "/team", label: "Team" },
   { href: "/audit", label: "Audit log" },

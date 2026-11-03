@@ -1,5 +1,11 @@
 # Hermes AI — Test Results
 
+## 2026-11-03: Inventory, stock checks, live email list
+- Backend: **251 passed** (full suite), including 16 new inventory tests: admin-only stock changes, member read-only, tenant isolation, word matching ("50 boxes of A4 paper" -> "A4 Paper"), in-stock and short/not-stocked/unknown-quantity paths, missing order lines, path validation, and recent emails on the mailbox endpoint. `ruff check` clean.
+- Web: `tsc --noEmit`, `eslint`, and `next build` pass; the build includes `/o/[orgId]/inventory`. All three sample workflows pass backend validation.
+- Browser tests were not rerun for this change.
+- Live AI: on Groq, `openai/gpt-oss-120b` and `qwen/qwen3.8-27b` read a clear order, a vague order, and an injection attempt correctly.
+
 ## 2026-11-03: AI order reading
 - Backend: **232 passed** (full suite, including 24 new AI tests against a simulated provider). `ruff check` and `ruff format --check` clean.
 - AI tests cover: free-form email to structured order, amounts written as text ("₹1,200"), totals computed by code and mismatches flagged, low confidence and missing totals routed to a person, extra keys from the model dropped and unable to skip approval, the email unable to break out of its fence, invalid and off-schema replies failing the run, JSON-mode fallback, retry on rate limits, rejected key, missing key, missing text, input cap, per-organization hourly limit, mailbox to AI end to end, status endpoint never revealing the key.

@@ -18,7 +18,7 @@ from app.audit import record_audit
 from app.crypto import encrypt_secret
 from app.deps import OrgAccess, get_db, org_access, trace_id_of
 from app.http_client import OutboundError, ensure_public_host
-from app.models import EmailInbox, Workflow
+from app.models import EmailInbox, Workflow, WorkflowExecution
 
 router = APIRouter(prefix="/api/v1/orgs/{org_id}/workflows/{workflow_id}/email-inbox", tags=["email"])
 
@@ -52,6 +52,14 @@ class InboxIn(BaseModel):
         return value.strip()
 
 
+class RecentEmail(BaseModel):
+    run_id: str
+    received_at: datetime
+    sender: str | None
+    subject: str | None
+    status: str
+
+
 class InboxOut(BaseModel):
     enabled: bool
     imap_host: str | None = None
@@ -61,6 +69,8 @@ class InboxOut(BaseModel):
     last_checked_at: datetime | None = None
     last_error: str | None = None
     runs_started: int = 0
+    # The latest emails that started runs, so the builder shows mail arriving.
+    recent_emails: list[RecentEmail] = []
 
 
 class CheckOut(BaseModel):
@@ -110,7 +120,29 @@ def get_inbox(
     db: Session = Depends(get_db),
 ) -> InboxOut:
     _workflow(db, access.org_id, workflow_id)
-    return _out(_inbox(db, access.org_id, workflow_id))
+    info = _out(_inbox(db, access.org_id, workflow_id))
+    runs = db.scalars(
+        select(WorkflowExecution)
+        .where(
+            WorkflowExecution.organization_id == access.org_id,
+            WorkflowExecution.workflow_id == workflow_id,
+            WorkflowExecution.trigger_type == "email",
+        )
+        .order_by(WorkflowExecution.started_at.desc())
+        .limit(8)
+    ).all()
+    for run in runs:
+        email = (run.trigger_payload or {}).get("email") or {}
+        info.recent_emails.append(
+            RecentEmail(
+                run_id=run.id,
+                received_at=run.started_at,
+                sender=str(email.get("from") or "")[:320] or None,
+                subject=str(email.get("subject") or "")[:200] or None,
+                status=run.status,
+            )
+        )
+    return info
 
 
 @router.put("", response_model=InboxOut)

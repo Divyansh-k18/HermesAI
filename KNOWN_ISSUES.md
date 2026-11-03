@@ -97,3 +97,9 @@ On a machine where another program already uses port 8000, the Hermes API cannot
 3. **The AI can misread an email.** That is why the sample sends low-confidence, missing-total, and large orders to a person. Do not remove those checks.
 4. **Free tiers may use submitted data for training.** Use made-up orders for demos.
 5. **Only the email body is read**, up to 8,000 characters. Attachments are ignored.
+
+## Inventory
+
+1. **Stock is not deducted.** Approving an order does not reduce the counts yet. Update quantities on the Inventory page.
+2. **Word matching can pick the wrong item** when two items share words (for example "pen" with both "Blue Pen" and "Red Pen" in stock). The run shows which item was matched.
+3. **One unit per item.** "50 boxes" is compared with the item's quantity as a plain number; unit conversion (boxes to pieces) is not done.

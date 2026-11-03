@@ -25,6 +25,9 @@ _PERMISSIONS: dict[str, frozenset[str]] = {
     # Everyone may see connection names to pick one in the builder. Secrets are never returned to anyone.
     "connections:read": frozenset(ROLES),
     "connections:manage": frozenset({"owner", "admin"}),
+    # Everyone sees stock levels; only admins change them.
+    "inventory:read": frozenset(ROLES),
+    "inventory:manage": frozenset({"owner", "admin"}),
 }
 
 

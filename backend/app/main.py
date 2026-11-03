@@ -20,7 +20,17 @@ from app.db import make_engine, make_session_factory
 from app.email_inbox import process_due_inboxes
 from app.engine import process_due_timers
 from app.ratelimit import SlidingWindowLimiter
-from app.routers import ai_status, auth, connections, email_inbox, executions, orgs, webhooks, workflows
+from app.routers import (
+    ai_status,
+    auth,
+    connections,
+    email_inbox,
+    executions,
+    inventory,
+    orgs,
+    webhooks,
+    workflows,
+)
 
 _SAFE_TRACE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 logger = logging.getLogger("hermes.scheduler")
@@ -142,4 +152,5 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(connections.router)
     app.include_router(email_inbox.router)
     app.include_router(ai_status.router)
+    app.include_router(inventory.router)
     return app

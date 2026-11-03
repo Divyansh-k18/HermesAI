@@ -198,6 +198,28 @@ export const NODE_META: Record<NodeKind, NodeMeta> = {
       },
     ],
   },
+  inventory: {
+    label: "Check stock",
+    description: "Compares each ordered item with your inventory and marks it available, short, or not stocked.",
+    group: "Systems",
+    handles: [],
+    fields: [
+      {
+        key: "items_path",
+        label: "Order lines from",
+        kind: "text",
+        placeholder: "order.items",
+        hint: "A list of items with a name and quantity. The AI step saves them in order.items.",
+      },
+      {
+        key: "result_path",
+        label: "Save result as",
+        kind: "text",
+        placeholder: "stock",
+        hint: "Later steps can check stock.status: in_stock, short, or needs_check.",
+      },
+    ],
+  },
   approval: {
     label: "Approval",
     description: "Pauses until a person approves or rejects.",
@@ -238,6 +260,7 @@ export const PALETTE_ORDER: NodeKind[] = [
   "database",
   "email",
   "http",
+  "inventory",
   "approval",
   "delay",
   "end",
@@ -259,6 +282,8 @@ export function defaultConfig(kind: NodeKind): Record<string, unknown> {
       return { integration: "postgresql" };
     case "http":
       return { method: "GET" };
+    case "inventory":
+      return { items_path: "order.items", result_path: "stock" };
     case "approval":
       return { approver_role: "admin" };
     case "delay":
