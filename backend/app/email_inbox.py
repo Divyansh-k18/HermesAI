@@ -130,6 +130,26 @@ class Mailbox(Protocol):
         """Return (uid_validity, [(uid, raw message)]) for messages with uid > last_uid, oldest first."""
 
 
+_GMAIL_APP_PASSWORD = re.compile(r"[a-zA-Z]{4}( ?[a-zA-Z]{4}){3}")
+
+
+def sign_in_password(host: str, password: str) -> str:
+    """Google shows app passwords as four groups of four letters. People paste them with the spaces."""
+    candidate = password.strip()
+    if host.lower() in {"imap.gmail.com", "imap.googlemail.com"} and _GMAIL_APP_PASSWORD.fullmatch(candidate):
+        return candidate.replace(" ", "")
+    return password
+
+
+def server_reason(error: Exception) -> str:
+    """The mail server's own explanation, such as Gmail's "Application-specific password required"."""
+    text = str(error)
+    if text.startswith(("b'", 'b"')) and len(text) > 3:
+        text = text[2:-1]
+    text = " ".join(text.split())[:160]
+    return f" The server said: {text}" if text else ""
+
+
 @dataclass
 class ImapMailbox:
     host: str
@@ -150,11 +170,12 @@ class ImapMailbox:
         except (OSError, imaplib.IMAP4.error) as error:
             raise MailboxError(f"Could not connect to {self.host}: {error}") from None
         try:
-            client.login(self.username, self.password)
-        except imaplib.IMAP4.error:
+            client.login(self.username.strip(), sign_in_password(self.host, self.password))
+        except imaplib.IMAP4.error as error:
             client.logout()
             raise MailboxError(
                 "The mail server refused the sign-in. For Gmail, use an app password and make sure IMAP is on."
+                + server_reason(error)
             ) from None
         status, _ = client.select(self._quoted_folder(), readonly=True)
         if status != "OK":

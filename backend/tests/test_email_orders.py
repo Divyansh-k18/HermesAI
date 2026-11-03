@@ -336,3 +336,17 @@ def test_a_renumbered_folder_restarts_from_the_newest_email(owner, org, flow, ma
     after = check(owner, org["id"], flow)
     assert after["started"] == 1
     assert after["error"] is None
+
+
+def test_gmail_app_passwords_work_with_the_spaces_google_shows():
+    assert mail.sign_in_password("imap.gmail.com", "abcd efgh ijkl mnop") == "abcdefghijklmnop"
+    assert mail.sign_in_password("imap.gmail.com", " abcdefghijklmnop ") == "abcdefghijklmnop"
+    # Other servers, and passwords that are not app passwords, are sent exactly as typed.
+    assert mail.sign_in_password("imap.example.com", "abcd efgh ijkl mnop") == "abcd efgh ijkl mnop"
+    assert mail.sign_in_password("imap.gmail.com", "my real pass word") == "my real pass word"
+
+
+def test_sign_in_errors_include_the_servers_reason():
+    reason = mail.server_reason(Exception("b'[ALERT] Application-specific password required'"))
+    assert reason == " The server said: [ALERT] Application-specific password required"
+    assert mail.server_reason(Exception("")) == ""
