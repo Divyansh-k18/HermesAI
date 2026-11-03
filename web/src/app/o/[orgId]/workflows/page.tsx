@@ -12,7 +12,6 @@ import {
   SAMPLE_AI_EMAIL_WORKFLOW_NAME,
   SAMPLE_EMAIL_WORKFLOW,
   SAMPLE_EMAIL_WORKFLOW_NAME,
-  SAMPLE_STOCK,
   SAMPLE_WORKFLOW,
   SAMPLE_WORKFLOW_NAME,
 } from "@/lib/sample-workflow";
@@ -70,9 +69,8 @@ export default function WorkflowLibraryPage() {
               definition: SAMPLE_WORKFLOW,
             };
       if (kind === "ai" && canPublish) {
-        // The AI sample checks stock, so give it something to check against.
-        const stock = await api.inventory.list(orgId);
-        if (stock.length === 0) for (const item of SAMPLE_STOCK) await api.inventory.create(orgId, item);
+        // The AI sample checks stock, so give it something to check against. Existing items are kept.
+        await api.inventory.addSamples(orgId);
       }
       const created = await api.workflows.create(orgId, { name: sample.name, description: sample.description });
       const id = created.workflow.id;

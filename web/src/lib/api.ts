@@ -479,5 +479,7 @@ export const api = {
     update: (orgId: string, itemId: string, input: Partial<Omit<InventoryItem, "id" | "updated_at">>) =>
       request<InventoryItem>("PATCH", `/orgs/${orgId}/inventory/${itemId}`, input),
     remove: (orgId: string, itemId: string) => request<void>("DELETE", `/orgs/${orgId}/inventory/${itemId}`),
+    /** Adds the demo office-supply items that are missing. Existing items are left alone. */
+    addSamples: (orgId: string) => request<InventoryItem[]>("POST", `/orgs/${orgId}/inventory/sample`),
   },
 };

@@ -203,14 +203,6 @@ export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
   ],
 };
 
-/** Stock that matches the sample email: 50 boxes of A4 paper and 20 packs of pens come to exactly ₹78,000. */
-export const SAMPLE_STOCK = [
-  { name: "A4 Paper", quantity: 200, unit: "box", unit_price: 1200 },
-  { name: "Blue Pen", quantity: 100, unit: "pack", unit_price: 900 },
-  { name: "Stapler", quantity: 5, unit: "piece", unit_price: 350 },
-  { name: "Printer Ink", quantity: 0, unit: "cartridge", unit_price: 2500 },
-];
-
 /** A realistic order written in a customer's own words, used to prefill runs of workflows with an AI step. */
 export const SAMPLE_ORDER_EMAIL =
   "Hi team,\n\nThis is Asha from Asha Traders. Please send 50 boxes of A4 paper and 20 packs of blue pens to our " +

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.audit import record_audit
 from app.deps import OrgAccess, get_db, org_access, trace_id_of
+from app.inventory import add_sample_stock
 from app.models import InventoryItem
 
 router = APIRouter(prefix="/api/v1/orgs/{org_id}/inventory", tags=["inventory"])
@@ -121,6 +122,31 @@ def create_item(
     _audit(db, request, access, "inventory.create", item)
     db.commit()
     return _out(item)
+
+
+@router.post("/sample", response_model=list[ItemOut])
+def add_samples(
+    request: Request,
+    access: OrgAccess = Depends(org_access("inventory:manage", csrf=True)),
+    db: Session = Depends(get_db),
+) -> list[ItemOut]:
+    """Fill in demo stock. Only adds items that are missing, so it is safe to press twice."""
+    added = add_sample_stock(db, access.org_id)
+    record_audit(
+        db,
+        action="inventory.sample",
+        organization_id=access.org_id,
+        actor_user_id=access.auth.user.id,
+        target_type="inventory_item",
+        target_id=None,
+        metadata={"added": added},
+        trace_id=trace_id_of(request),
+    )
+    db.commit()
+    rows = db.scalars(
+        select(InventoryItem).where(InventoryItem.organization_id == access.org_id).order_by(InventoryItem.name)
+    ).all()
+    return [_out(row) for row in rows]
 
 
 @router.patch("/{item_id}", response_model=ItemOut)

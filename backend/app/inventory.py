@@ -21,6 +21,38 @@ _IGNORED = frozenset(
 )
 MIN_MATCH = 0.5
 
+# Office supplies for demos. A4 Paper and Blue Pen match the sample order email (50 boxes and 20 packs come to
+# exactly ₹78,000). Some items are low or out of stock so the stock-problem path can be shown.
+SAMPLE_STOCK: tuple[dict[str, Any], ...] = (
+    {"name": "A4 Paper", "sku": "PAP-A4", "quantity": 200, "unit": "box", "unit_price": 1200},
+    {"name": "Blue Pen", "sku": "PEN-BLU", "quantity": 100, "unit": "pack", "unit_price": 900},
+    {"name": "Black Pen", "sku": "PEN-BLK", "quantity": 80, "unit": "pack", "unit_price": 900},
+    {"name": "Whiteboard Marker", "sku": "MRK-WB", "quantity": 8, "unit": "pack", "unit_price": 450},
+    {"name": "Sticky Notes", "sku": "NOTE-STK", "quantity": 60, "unit": "pack", "unit_price": 120},
+    {"name": "Spiral Notebook", "sku": "NB-SPR", "quantity": 120, "unit": "piece", "unit_price": 85},
+    {"name": "File Folder", "sku": "FLD-01", "quantity": 300, "unit": "piece", "unit_price": 25},
+    {"name": "Stapler", "sku": "STP-01", "quantity": 5, "unit": "piece", "unit_price": 350},
+    {"name": "Staple Pins", "sku": "STP-PIN", "quantity": 150, "unit": "box", "unit_price": 40},
+    {"name": "Calculator", "sku": "CALC-12", "quantity": 12, "unit": "piece", "unit_price": 750},
+    {"name": "Envelope", "sku": "ENV-A4", "quantity": 40, "unit": "pack", "unit_price": 300},
+    {"name": "Printer Ink", "sku": "INK-BLK", "quantity": 0, "unit": "cartridge", "unit_price": 2500},
+)
+
+
+def add_sample_stock(db: Session, organization_id: str) -> int:
+    """Add the sample items an organization does not have yet. Existing items, and their counts, are left alone."""
+    existing = {
+        name.lower()
+        for name in db.scalars(select(InventoryItem.name).where(InventoryItem.organization_id == organization_id))
+    }
+    added = 0
+    for sample in SAMPLE_STOCK:
+        if sample["name"].lower() not in existing:
+            db.add(InventoryItem(organization_id=organization_id, **sample))
+            added += 1
+    db.flush()
+    return added
+
 
 def _words(name: str) -> set[str]:
     words = set()

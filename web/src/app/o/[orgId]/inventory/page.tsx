@@ -7,7 +7,6 @@ import { useState } from "react";
 import { Badge, Button, EmptyState, Field, FormError, Skeleton } from "@/components/ui";
 import { formatTime } from "@/components/status";
 import { ApiError, api, type InventoryItem } from "@/lib/api";
-import { SAMPLE_STOCK } from "@/lib/sample-workflow";
 
 const LOW_STOCK = 10;
 
@@ -65,9 +64,7 @@ export default function InventoryPage() {
     onError: (error) => setErrors(messagesOf(error)),
   });
   const seed = useMutation({
-    mutationFn: async () => {
-      for (const item of SAMPLE_STOCK) await api.inventory.create(orgId, item);
-    },
+    mutationFn: () => api.inventory.addSamples(orgId),
     onSettled: refresh,
     onError: (error) => setErrors(messagesOf(error)),
   });
@@ -87,6 +84,11 @@ export default function InventoryPage() {
           The Check stock step compares every ordered item with this list. Items that are short, unknown, or have no
           quantity are never treated as available, so a person checks them.
         </p>
+        {canManage && items.data && items.data.length > 0 && (
+          <Button variant="secondary" className="mt-4" onClick={() => seed.mutate()} loading={seed.isPending}>
+            Add sample stock
+          </Button>
+        )}
       </header>
 
       <section aria-labelledby="stock-heading" className="grid gap-8 lg:grid-cols-[3fr_2fr]">

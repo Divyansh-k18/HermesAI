@@ -180,3 +180,17 @@ def test_the_mailbox_panel_lists_emails_that_started_runs(owner, org, monkeypatc
     assert len(recent) == 1
     assert recent[0]["sender"] == "asha@traders.example.com"
     assert recent[0]["status"] == "succeeded"
+
+
+def test_sample_stock_fills_gaps_and_never_overwrites(owner, org, make_account):
+    add_item(owner, org["id"], "a4 paper", 3)  # an existing item with a sample's name, in different case
+    first = owner.post(f"{inv(org['id'])}/sample")
+    assert first.status_code == 200, first.text
+    names = {i["name"]: i["quantity"] for i in first.json()}
+    assert len(names) == 12
+    assert names["a4 paper"] == 3 and "A4 Paper" not in names  # left alone, not duplicated
+    assert names["Printer Ink"] == 0 and names["Blue Pen"] == 100
+    assert len(owner.post(f"{inv(org['id'])}/sample").json()) == 12  # pressing twice adds nothing
+
+    member = add_member(owner, org["id"], make_account, "stock-sample-member@example.com", "member")
+    assert member.post(f"{inv(org['id'])}/sample").status_code == 403
