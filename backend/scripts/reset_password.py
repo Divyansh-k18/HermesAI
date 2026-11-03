@@ -1,7 +1,8 @@
 """Set a new password for an account in the local database (there is no email recovery yet).
 
 Usage (from the backend folder):
-    .venv\\Scripts\\python scripts\\reset_password.py you@example.com
+    .venv\\Scripts\\python scripts\\reset_password.py                   # list the accounts on this machine
+    .venv\\Scripts\\python scripts\\reset_password.py you@example.com   # set a new password
 
 The new password is typed twice and not shown on screen. It must follow the normal rules (at least 12
 characters, upper and lower case letters, and a digit). Every signed-in session of that account is ended.
@@ -23,11 +24,19 @@ from app.security import hash_password, password_policy_errors  # noqa: E402
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    if len(sys.argv) > 2:
         print(__doc__)
         return 2
-    email = sys.argv[1].strip().lower()
     session_factory = make_session_factory(make_engine(get_settings().database_url))
+    if len(sys.argv) == 1:
+        # Each machine has its own database, so an account made on one laptop does not exist on another.
+        with session_factory() as db:
+            emails = db.scalars(select(User.email).order_by(User.email)).all()
+        print("Accounts on this machine:" if emails else "No accounts on this machine yet. Use Create account.")
+        for address in emails:
+            print(f"  {address}")
+        return 0
+    email = sys.argv[1].strip().lower()
     with session_factory() as db:
         user = db.scalar(select(User).where(func.lower(User.email) == email))
         if user is None:
