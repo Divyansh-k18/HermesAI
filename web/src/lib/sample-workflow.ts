@@ -213,24 +213,26 @@ export function payloadTemplate(definition: WorkflowDefinition): Record<string, 
   }
   const fromAI = (field: string) => aiResults.some((path) => field === path || field.startsWith(`${path}.`));
 
+  // A value each condition accepts, so the example run takes a meaningful path instead of failing a comparison.
+  const examples = new Map<string, unknown>();
   for (const node of definition.nodes) {
-    if (
-      node.type === "condition" &&
-      typeof node.config.field === "string" &&
-      !written.has(node.config.field) &&
-      !fromAI(node.config.field)
-    ) {
-      const target = typeof node.config.value === "number" ? node.config.value : Number(node.config.value);
-      const operator = node.config.operator;
-      if (Number.isFinite(target) && (operator === "gt" || operator === "gte")) put(node.config.field, Math.round(target * 1.5));
-      else if (Number.isFinite(target) && (operator === "lt" || operator === "lte")) put(node.config.field, Math.round(target / 2));
-      else put(node.config.field, node.config.value ?? "");
-    }
+    if (node.type !== "condition" || typeof node.config.field !== "string") continue;
+    const target = typeof node.config.value === "number" ? node.config.value : Number(node.config.value);
+    const operator = node.config.operator;
+    let example: unknown = node.config.value ?? "";
+    if (Number.isFinite(target) && (operator === "gt" || operator === "gte")) example = Math.round(target * 1.5);
+    else if (Number.isFinite(target) && (operator === "lt" || operator === "lte")) example = Math.round(target / 2);
+    if (!examples.has(node.config.field)) examples.set(node.config.field, example);
+    if (!written.has(node.config.field) && !fromAI(node.config.field)) put(node.config.field, example);
   }
   for (const node of definition.nodes) {
     if (node.type === "transformation" && Array.isArray(node.config.mappings)) {
-      for (const mapping of node.config.mappings as { source?: string }[]) {
-        if (mapping.source && !written.has(mapping.source)) put(mapping.source, "example");
+      for (const mapping of node.config.mappings as { source?: string; target?: string }[]) {
+        if (!mapping.source || written.has(mapping.source)) continue;
+        // A copied field gets the value its condition checks, e.g. email.fields.total -> order.total > 50000.
+        const checked = mapping.target ? examples.get(mapping.target) : undefined;
+        const looksLikeEmail = /(^|\.)(from|email)$/.test(mapping.source) || /email$/.test(mapping.target ?? "");
+        put(mapping.source, checked !== undefined ? checked : looksLikeEmail ? "customer@example.com" : "example");
       }
     }
   }
