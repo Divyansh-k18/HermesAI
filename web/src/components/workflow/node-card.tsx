@@ -14,7 +14,9 @@ function summarize(node: FlowNode["data"]): string {
     case "trigger":
       return text("event");
     case "ai_agent":
-      return text("instructions");
+      return text("task") === "extract_order"
+        ? `read order from ${text("input_path") || "email.body"}`
+        : text("instructions");
     case "condition":
       return text("field") ? `${text("field")} ${text("operator")} ${config.value ?? ""}`.trim() : "";
     case "crm":

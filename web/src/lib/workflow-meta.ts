@@ -52,18 +52,38 @@ export const NODE_META: Record<NodeKind, NodeMeta> = {
   },
   ai_agent: {
     label: "AI Agent",
-    description: "Reads the data and produces a structured recommendation.",
+    description: "Reads free-form text, such as an order email, and turns it into structured data.",
     group: "Logic",
     handles: [],
     fields: [
       {
-        key: "instructions",
-        label: "Instructions",
-        kind: "textarea",
-        placeholder: "Assess the risk of this order and explain why.",
-        hint: "Up to 4,000 characters. The agent can only use tools you list below.",
+        key: "task",
+        label: "Task",
+        kind: "select",
+        options: [{ value: "extract_order", label: "Read an order from text" }],
+        hint: "The AI only reads. Your conditions and approvals decide what happens next.",
       },
-      { key: "allowed_tools", label: "Allowed tools", kind: "list", placeholder: "check_stock, get_customer" },
+      {
+        key: "input_path",
+        label: "Read text from",
+        kind: "text",
+        placeholder: "email.body",
+        hint: "Where the text is in the run data. Order emails put it in email.body.",
+      },
+      {
+        key: "instructions",
+        label: "Guidance (optional)",
+        kind: "textarea",
+        placeholder: "We sell paper and stationery. Prices are in rupees.",
+        hint: "Background that helps the AI read your customers' emails. Up to 4,000 characters.",
+      },
+      {
+        key: "result_path",
+        label: "Save result as",
+        kind: "text",
+        placeholder: "order",
+        hint: "Later steps read order.total, order.confidence, order.customer_name and order.items.",
+      },
     ],
   },
   condition: {
@@ -227,6 +247,8 @@ export function defaultConfig(kind: NodeKind): Record<string, unknown> {
   switch (kind) {
     case "trigger":
       return { event: "manual" };
+    case "ai_agent":
+      return { task: "extract_order", input_path: "email.body", result_path: "order" };
     case "condition":
       return { operator: "eq" };
     case "crm":

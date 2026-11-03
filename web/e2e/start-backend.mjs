@@ -18,6 +18,8 @@ const env = {
   HERMES_ENV: "test",
   HERMES_DATABASE_URL: "sqlite:///./e2e.db",
   HERMES_LOGIN_RATE_LIMIT: "1000",
+  // Tests never call a real AI provider, even when backend/.env has a key.
+  HERMES_AI_API_KEY: "",
 };
 
 const migrate = spawnSync(exe("alembic"), ["upgrade", "head"], { cwd: backend, env, stdio: "inherit" });

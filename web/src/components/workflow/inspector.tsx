@@ -38,6 +38,8 @@ export function Inspector({ node, readOnly, issues, onChange, onDelete }: Props)
         <p className="mt-2 text-[12px] text-muted">{meta.description}</p>
       </div>
 
+      {node.data.kind === "ai_agent" && <AIStatusNote />}
+
       {issues.length > 0 && (
         <ul className="flex flex-col gap-1.5" aria-label="Issues for this step">
           {issues.map((issue, index) => (
@@ -205,6 +207,26 @@ function FieldEditor({
       </label>
       {control}
       {field.hint && <p className="text-[11px] text-faint">{field.hint}</p>}
+    </div>
+  );
+}
+
+/** Says whether the server has an AI key, so a missing key shows up here instead of as a failed run. */
+function AIStatusNote() {
+  const status = useQuery({ queryKey: ["ai-status"], queryFn: () => api.ai.status(), staleTime: 60_000 });
+  if (!status.data) return null;
+  return status.data.configured ? (
+    <p className="text-[12px] text-muted">
+      <Badge tone="success">AI on</Badge> <span className="ml-1">{status.data.model}</span>
+      <span className="text-faint"> · {status.data.provider}</span>
+    </p>
+  ) : (
+    <div className="border border-warning/40 px-3 py-2 text-[12px] text-muted">
+      <p className="font-medium text-text">AI is not set up on this server</p>
+      <p className="mt-1">
+        Runs will stop at this step. Add a free AI key to <code className="font-mono">backend/.env</code> and restart
+        the backend. The README section “Turn on AI” shows how.
+      </p>
     </div>
   );
 }

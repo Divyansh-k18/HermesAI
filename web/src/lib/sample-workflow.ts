@@ -101,6 +101,84 @@ export const SAMPLE_EMAIL_WORKFLOW: WorkflowDefinition = {
   ],
 };
 
+export const SAMPLE_AI_EMAIL_WORKFLOW_NAME = "AI email order approval (sample)";
+
+/**
+ * Customers write orders in their own words. The AI step reads the email into a structured order; plain rules
+ * then decide. Unclear emails go to a person, large orders go to a manager, and small clear orders finish.
+ */
+export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
+  nodes: [
+    { id: "trigger", type: "trigger", label: "Order email received", position: { x: 0, y: 160 }, config: { event: "email.received" } },
+    {
+      id: "ai",
+      type: "ai_agent",
+      label: "AI reads the order",
+      position: { x: 280, y: 160 },
+      config: { task: "extract_order", input_path: "email.body", result_path: "order" },
+    },
+    {
+      id: "found",
+      type: "condition",
+      label: "Total found?",
+      position: { x: 560, y: 160 },
+      config: { field: "order.total", operator: "exists" },
+    },
+    {
+      id: "sure",
+      type: "condition",
+      label: "AI confident?",
+      position: { x: 840, y: 60 },
+      config: { field: "order.confidence", operator: "gte", value: 0.6 },
+    },
+    {
+      id: "big",
+      type: "condition",
+      label: "Order over ₹50,000?",
+      position: { x: 1120, y: -20 },
+      config: { field: "order.total", operator: "gt", value: 50000 },
+    },
+    {
+      id: "manager",
+      type: "approval",
+      label: "Manager approval",
+      position: { x: 1400, y: -120 },
+      config: { approver_role: "admin", title: "Approve large order read by AI" },
+    },
+    {
+      id: "review",
+      type: "approval",
+      label: "Person checks the email",
+      position: { x: 1120, y: 300 },
+      config: { approver_role: "admin", title: "Check unclear order email" },
+    },
+    { id: "approved", type: "end", label: "Approved", position: { x: 1680, y: -180 }, config: {} },
+    { id: "rejected", type: "end", label: "Rejected", position: { x: 1680, y: -40 }, config: {} },
+    { id: "auto", type: "end", label: "Auto-approved (small order)", position: { x: 1400, y: 100 }, config: {} },
+    { id: "confirmed", type: "end", label: "Confirmed after review", position: { x: 1400, y: 240 }, config: {} },
+    { id: "declined", type: "end", label: "Not an order", position: { x: 1400, y: 380 }, config: {} },
+  ],
+  edges: [
+    { id: "e1", source: "trigger", target: "ai", source_handle: null, label: "" },
+    { id: "e2", source: "ai", target: "found", source_handle: null, label: "" },
+    { id: "e3", source: "found", target: "sure", source_handle: "true", label: "true" },
+    { id: "e4", source: "found", target: "review", source_handle: "false", label: "false" },
+    { id: "e5", source: "sure", target: "big", source_handle: "true", label: "true" },
+    { id: "e6", source: "sure", target: "review", source_handle: "false", label: "false" },
+    { id: "e7", source: "big", target: "manager", source_handle: "true", label: "true" },
+    { id: "e8", source: "big", target: "auto", source_handle: "false", label: "false" },
+    { id: "e9", source: "manager", target: "approved", source_handle: "approved", label: "approved" },
+    { id: "e10", source: "manager", target: "rejected", source_handle: "rejected", label: "rejected" },
+    { id: "e11", source: "review", target: "confirmed", source_handle: "approved", label: "approved" },
+    { id: "e12", source: "review", target: "declined", source_handle: "rejected", label: "rejected" },
+  ],
+};
+
+/** A realistic order written in a customer's own words, used to prefill runs of workflows with an AI step. */
+export const SAMPLE_ORDER_EMAIL =
+  "Hi team,\n\nThis is Asha from Asha Traders. Please send 50 boxes of A4 paper and 20 packs of blue pens to our " +
+  "Pune warehouse by Friday. As per your quote the total comes to Rs 78,000.\n\nThanks,\nAsha";
+
 /** Builds an example run payload from the fields a workflow reads, so people start from something valid. */
 export function payloadTemplate(definition: WorkflowDefinition): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -118,16 +196,30 @@ export function payloadTemplate(definition: WorkflowDefinition): Record<string, 
   };
 
   const written = new Set<string>();
+  // Paths an AI step fills in, such as order. Everything under them comes from the AI, not the payload.
+  const aiResults: string[] = [];
   for (const node of definition.nodes) {
     if (node.type === "transformation" && Array.isArray(node.config.mappings)) {
       for (const mapping of node.config.mappings as { target?: string }[]) {
         if (mapping.target) written.add(mapping.target);
       }
     }
+    if (node.type === "ai_agent") {
+      const input = typeof node.config.input_path === "string" && node.config.input_path ? node.config.input_path : "email.body";
+      const output = typeof node.config.result_path === "string" && node.config.result_path ? node.config.result_path : "order";
+      put(input, SAMPLE_ORDER_EMAIL);
+      aiResults.push(output);
+    }
   }
+  const fromAI = (field: string) => aiResults.some((path) => field === path || field.startsWith(`${path}.`));
 
   for (const node of definition.nodes) {
-    if (node.type === "condition" && typeof node.config.field === "string" && !written.has(node.config.field)) {
+    if (
+      node.type === "condition" &&
+      typeof node.config.field === "string" &&
+      !written.has(node.config.field) &&
+      !fromAI(node.config.field)
+    ) {
       const target = typeof node.config.value === "number" ? node.config.value : Number(node.config.value);
       const operator = node.config.operator;
       if (Number.isFinite(target) && (operator === "gt" || operator === "gte")) put(node.config.field, Math.round(target * 1.5));

@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     scheduler_interval_seconds: float = 2.0
     webhook_rate_limit: int = 120  # deliveries per endpoint per minute
     email_poll_seconds: int = 60  # how often connected mailboxes are checked for new orders
+    # AI step: any OpenAI-compatible chat completions endpoint (for example Google AI Studio or Groq).
+    # All three must be set in backend/.env for AI steps to run. The key is never returned by the API.
+    ai_base_url: str = ""
+    ai_api_key: str = ""
+    ai_model: str = ""
+    ai_calls_per_hour: int = 200  # per organization
+    ai_max_input_chars: int = 8000
     login_rate_limit: int = 10
     login_rate_window_seconds: int = 900
 

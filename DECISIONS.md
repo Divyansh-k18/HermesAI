@@ -77,3 +77,9 @@ Hermes polls the mailbox with IMAP instead of needing an inbound-email provider,
 
 ## D-026: Structured order lines instead of guessing
 Without an AI model, Hermes reads only explicit "Field: value" lines and converts amounts like "₹75,000" to numbers. Conditions then fail closed when a field is missing (D-021). This is predictable and easy to explain, and it leaves free-form understanding to a future AI step.
+
+## D-027: The AI reads, rules decide
+The AI step only turns free-form text into a structured order. It cannot approve, call tools, or choose the next step. The reply must match a strict schema, unknown keys are dropped, and totals are recomputed in code and flagged when they disagree. The email is fenced as untrusted data, and the workflow author's guidance goes in the system prompt. Conditions and approvals then route the order, so a misread or manipulated email still reaches a person when the total is large, missing, or the confidence is low.
+
+## D-028: Provider-neutral AI through the OpenAI-compatible API
+One small httpx client talks to any `/chat/completions` endpoint, so the team can use free tiers (Groq, Google AI Studio) for the demo and switch providers by changing three settings. The key lives only in `backend/.env`; the status endpoint reports whether AI is configured, never the key.

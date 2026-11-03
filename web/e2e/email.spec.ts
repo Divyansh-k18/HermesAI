@@ -47,3 +47,24 @@ test("the email order sample loads and the mailbox form reports connection probl
   await expect(page.getByText("waiting for approval").first()).toBeVisible();
   await expect(page.getByText("Approve emailed order over ₹50,000")).toBeVisible();
 });
+
+// The test server has no AI key, so this checks the setup is visible and the run stops with a clear reason.
+// Reading real emails with a live model is covered by backend tests against a simulated provider.
+test("the AI email sample prefills a free-form order and explains a missing AI key", async ({ page }) => {
+  await signUpWithOrg(page, "Ai");
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Workflows", exact: true }).click();
+  await page.getByRole("button", { name: "Load AI email order sample" }).click();
+  await expect(page.getByText("active · v1").first()).toBeVisible();
+
+  await page.locator(".react-flow__node").filter({ hasText: "AI reads the order" }).click();
+  await expect(page.getByText("AI is not set up on this server")).toBeVisible();
+  await expect(page.getByLabel("Task")).toHaveValue("extract_order");
+  await expect(page.getByLabel("Read text from")).toHaveValue("email.body");
+  await page.screenshot({ path: "e2e/screenshots/ai-step.png" });
+
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.getByLabel("Run data (JSON)")).toHaveValue(/Asha Traders/);
+  await page.getByRole("dialog").getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page).toHaveURL(/\/executions\/[0-9a-f-]+$/);
+  await expect(page.getByText(/The AI step is not set up/).first()).toBeVisible();
+});

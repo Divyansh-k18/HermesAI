@@ -13,6 +13,7 @@ Teams design a workflow on a canvas, publish it as a frozen version, and run it.
 - **Human approval.** A run pauses at an approval step. Only the role the workflow names can decide. A decision applies once. A rejected run can never finish as succeeded, and the approved path never runs.
 - **Webhook triggers.** Another system can start a workflow with a signed HTTP request. Signatures use HMAC-SHA256, requests older than five minutes are refused, a repeated event returns the original run, and the signing secret is stored encrypted and shown once. `backend/scripts/send_webhook.py` sends a signed test event.
 - **Orders by email.** Connect a mailbox (for example Gmail with an app password) to a workflow, and each new email starts a run. Order details come from lines such as `Total: 75,000` and `Customer: Asha Traders`, which arrive as `email.fields.total` and `email.fields.customer`. Hermes only reads new mail, never marks it as read, never processes old mail, starts at most one run per email, and can be limited to known senders. The password is stored encrypted.
+- **AI reads free-form order emails.** The AI step turns an email written in any style ("please send 50 boxes of A4 paper to Pune by Friday, total Rs 75,000") into a structured order: customer, items, total, delivery, a confidence score, and what is missing. The AI only reads. Plain rules decide what happens next, so unclear or large orders still go to a person. Works with any OpenAI-compatible provider, including free tiers from Groq and Google AI Studio. See **Turn on AI** below.
 - **HTTP step and connections.** A workflow can call any public HTTPS API and use the response in later steps. API keys are stored as encrypted connections on the Integrations page and never appear in a workflow or run trace. Private and internal addresses are blocked, redirects are not followed, and only safe requests are retried.
 - **Idempotency.** Starting a run with the same key, or delivering the same webhook event twice, returns the same run.
 - **Operations view.** Real numbers from the database: runs, outcomes by day, waiting approvals, average run time. Plus an audit log of security-relevant actions with the person who acted and a trace ID.
@@ -23,7 +24,8 @@ Teams design a workflow on a canvas, publish it as a frozen version, and run it.
 Be clear about this when presenting.
 
 - No vendor integrations. HubSpot, ERPNext, Gmail, and PostgreSQL steps are in the builder, but running them fails with a clear "not available yet" message. The generic HTTP step works.
-- No AI steps and no natural-language workflow creation.
+- AI does one job: reading orders from text. There is no natural-language workflow creation, and the AI cannot call tools or take actions.
+- The AI step has been tested against a simulated provider, not yet against a live model. Try it with your key before presenting.
 - The engine is database-backed and in-process. It is not Temporal.
 - Webhooks are generic, signed by Hermes's own scheme. There is no HubSpot-specific signature check yet, and no scheduled triggers.
 - No billing, usage limits, account recovery, or email delivery.
@@ -118,3 +120,42 @@ More detail: [ARCHITECTURE.md](ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md), [
 6. Click **Check now**, or wait up to a minute. Open the run: an order over ₹50,000 waits for approval.
 
 Hermes only reads emails that arrive after the mailbox is connected.
+
+## Turn on AI (free key)
+
+The AI step needs a key from an AI provider. Both options below have a free tier. **Never paste the key into chat, code, or a workflow. It goes only in `backend/.env`, which git ignores.**
+
+**Option A: Groq (recommended for demos, very fast)**
+
+1. Go to https://console.groq.com/keys, sign in, and click **Create API Key**. Copy it.
+2. Open `backend/.env` (create it if it does not exist) and add:
+
+   ```
+   HERMES_AI_BASE_URL=https://api.groq.com/openai/v1
+   HERMES_AI_API_KEY=paste-your-key-here
+   HERMES_AI_MODEL=llama-3.3-70b-versatile
+   ```
+
+**Option B: Google AI Studio (Gemini)**
+
+1. Go to https://aistudio.google.com/apikey and click **Create API key**. Copy it.
+2. Add to `backend/.env`:
+
+   ```
+   HERMES_AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+   HERMES_AI_API_KEY=paste-your-key-here
+   HERMES_AI_MODEL=gemini-2.5-flash
+   ```
+
+Model names change over time. If a run fails with "model or URL not found", check the provider's model list and update `HERMES_AI_MODEL`. Free tiers may use your data to improve their models, so use made-up orders for demos, not real customer data.
+
+**Then:**
+
+1. Stop the backend (Ctrl+C) and start it again with `python run.py`. Settings are read at start-up.
+2. In Hermes, open **Workflows** and click **Load AI email order sample**. Click the AI step: the right panel should say **AI on**.
+3. Click **Run**. The payload is pre-filled with an order written in plain English. Edit the text however you like, then run it.
+4. Open the run. The AI step's output shows the order it read; a large, clear order waits for a manager, and a vague one waits for a person to check it.
+
+To take real emails, connect a mailbox to this workflow as described in **Taking orders by email** above. The AI reads each email body.
+
+Limits: each organization can make 200 AI calls an hour (`HERMES_AI_CALLS_PER_HOUR`), and only the first 8,000 characters of an email are read (`HERMES_AI_MAX_INPUT_CHARS`).

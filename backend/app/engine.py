@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app import http_client
+from app import ai, http_client
 from app.crypto import SecretDecryptionError, decrypt_secret
 from app.models import (
     Approval,
@@ -34,9 +34,11 @@ MAX_STEPS = 500
 MAX_PAYLOAD_BYTES = 50_000
 DEFAULT_RESULT_PATH = "http_response"
 
-SUPPORTED_NODE_TYPES = frozenset({"trigger", "condition", "transformation", "delay", "approval", "http", "end"})
+SUPPORTED_NODE_TYPES = frozenset(
+    {"trigger", "condition", "transformation", "delay", "approval", "http", "ai_agent", "end"}
+)
+AI_TASKS = frozenset({"extract_order"})
 UNAVAILABLE_REASON = {
-    "ai_agent": "The AI agent step is not available yet.",
     "crm": "CRM steps are not available yet. No CRM integration is connected.",
     "erp": "ERP steps are not available yet. No ERP integration is connected.",
     "database": "Database steps are not available yet.",
@@ -302,6 +304,9 @@ def _run_node(
     if kind == "http":
         return None, _run_http(db, execution, node, config), None
 
+    if kind == "ai_agent":
+        return None, _run_ai(db, execution, config), None
+
     if kind == "approval":
         title = str(config.get("title") or node.get("label") or "Approval needed")[:200]
         approval = Approval(
@@ -517,4 +522,46 @@ def _run_http(db: Session, execution: WorkflowExecution, node: dict, config: dic
         "bytes": response.size,
         "stored_at": result_path,
         "connection": connection_name,
+    }
+
+
+def _run_ai(db: Session, execution: WorkflowExecution, config: dict[str, Any]) -> dict[str, Any]:
+    """Read text from the run's data with the AI model and store a validated, structured result.
+
+    The model only describes the text. It cannot approve or act: later conditions and approvals decide.
+    """
+    settings = db.info.get("settings")
+    if settings is None or not ai.is_configured(settings):
+        raise EngineError("The AI step is not set up. Add an AI key to backend/.env (see README, Turn on AI).")
+    task = str(config.get("task") or "extract_order")
+    if task not in AI_TASKS:
+        raise EngineError(f"Unknown AI task: {task}")
+
+    input_path = str(config.get("input_path") or "email.body").strip()
+    found, text = lookup(execution.variables, input_path)
+    if not found or not isinstance(text, str) or not text.strip():
+        raise EngineError(f"There is no text to read at {input_path}.")
+    if not ai.allow_call(settings, execution.organization_id):
+        raise EngineError("This organization reached its hourly limit for AI steps. Try again later.")
+
+    try:
+        result = ai.extract_order(settings, text, str(config.get("instructions") or ""))
+    except ai.AIError as error:
+        raise EngineError(str(error)) from None
+
+    result_path = str(config.get("result_path") or "order").strip()
+    updated = dict(execution.variables)
+    assign(updated, result_path, result["order"])
+    execution.variables = updated
+    order = result["order"]
+    return {
+        "task": task,
+        "model": result["model"],
+        "prompt_tokens": result["prompt_tokens"],
+        "completion_tokens": result["completion_tokens"],
+        "is_order": order["is_order"],
+        "confidence": order["confidence"],
+        "total": order["total"],
+        "total_source": order["total_source"],
+        "stored_at": result_path,
     }

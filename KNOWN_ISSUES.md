@@ -82,10 +82,18 @@ On a machine where another program already uses port 8000, the Hermes API cannot
 
 ## Email orders
 1. **Not yet tested against a live mailbox.** Tests use a fake mailbox with real email messages. The IMAP code uses Python's standard library and has not been run against Gmail or another provider from this machine. Treat the first live connection as the real test.
-2. **Order details must be in "Field: value" lines.** Free-form text such as "please send 5 boxes" is not understood. That needs the AI step, which is not built.
+2. **Without an AI key, order details must be in "Field: value" lines.** With a key, the AI step reads free-form emails (see below).
 3. **Checked once a minute** by the API's background loop, or on demand with Check now. Not instant.
 4. **Up to 20 new emails per check.** A burst larger than that is handled over the next checks.
 5. **Renumbered folders restart from the newest email.** If the mail server rebuilds a folder's numbering, Hermes starts again from the newest message so old mail never becomes orders. An email that arrived at that exact moment could be skipped. Message-IDs prevent repeats.
 6. **Anyone can email the address unless senders are restricted.** The panel warns about this. Approvals still apply to large orders.
 7. **Attachments are ignored.** Only the text (or HTML converted to text) is read.
 8. **Gmail needs an app password.** OAuth sign-in with Google is not built.
+
+## AI order reading
+
+1. **Not yet tested against a live model.** All tests use a simulated provider that returns scripted replies, including bad ones. The first run with a real key is the real test. Try it before presenting.
+2. **Free tiers have rate limits.** If the provider refuses with a rate limit, Hermes retries once, then the run fails with a clear message. Wait a minute and run again.
+3. **The AI can misread an email.** That is why the sample sends low-confidence, missing-total, and large orders to a person. Do not remove those checks.
+4. **Free tiers may use submitted data for training.** Use made-up orders for demos.
+5. **Only the email body is read**, up to 8,000 characters. Attachments are ignored.

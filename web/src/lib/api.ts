@@ -216,6 +216,13 @@ export interface ConnectionItem {
   created_at: string;
 }
 
+/** Whether AI steps can run on this server. The key itself never leaves the server. */
+export interface AIStatus {
+  configured: boolean;
+  model: string | null;
+  provider: string | null;
+}
+
 export interface WebhookInfo {
   enabled: boolean;
   path: string | null;
@@ -438,5 +445,8 @@ export const api = {
       request<ConnectionItem>("POST", `/orgs/${orgId}/connections`, input),
     remove: (orgId: string, connectionId: string) =>
       request<void>("DELETE", `/orgs/${orgId}/connections/${connectionId}`),
+  },
+  ai: {
+    status: () => request<AIStatus>("GET", "/ai/status"),
   },
 };

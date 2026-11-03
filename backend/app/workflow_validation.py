@@ -19,6 +19,7 @@ from app.workflow_schema import Definition, Node
 CONDITION_OPERATORS = frozenset({"eq", "neq", "gt", "gte", "lt", "lte", "contains", "exists"})
 HTTP_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE"})
 APPROVER_ROLES = frozenset({"owner", "admin"})
+AI_TASKS = frozenset({"extract_order"})
 # A dotted data path such as order or response.body.items.
 DATA_PATH = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$")
 MAX_DELAY_SECONDS = 30 * 24 * 3600
@@ -208,11 +209,19 @@ def _validate_node_config(node: Node) -> list[Issue]:
         if not _text(config, "event"):
             error("missing_config", "Choose the event that starts this workflow.")
     elif kind == "ai_agent":
+        task = config.get("task")
         instructions = _text(config, "instructions")
-        if not instructions:
-            error("missing_config", "Describe what the AI agent should do.")
-        elif len(instructions) > MAX_INSTRUCTIONS:
+        if task not in (None, "") and task not in AI_TASKS:
+            error("invalid_config", "Choose what the AI should do.")
+        # With a task chosen, guidance is optional. Without one, the instructions are the whole job.
+        if not task and not instructions:
+            error("missing_config", "Choose what the AI should do.")
+        if len(instructions) > MAX_INSTRUCTIONS:
             error("invalid_config", f"Instructions must be at most {MAX_INSTRUCTIONS} characters.")
+        for key, label in (("input_path", "Read text from"), ("result_path", "Save result as")):
+            value = config.get(key)
+            if value not in (None, "") and not (isinstance(value, str) and DATA_PATH.match(value.strip())):
+                error("invalid_config", f"“{label}” must be a data path such as email.body or order.")
         tools = config.get("allowed_tools", [])
         if not isinstance(tools, list) or not all(isinstance(t, str) for t in tools):
             error("invalid_config", "Allowed tools must be a list of tool names.")

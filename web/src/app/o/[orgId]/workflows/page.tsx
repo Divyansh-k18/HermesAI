@@ -8,6 +8,8 @@ import { useState } from "react";
 import { Badge, Button, EmptyState, Field, FormError, Skeleton } from "@/components/ui";
 import { ApiError, api, type WorkflowSummary } from "@/lib/api";
 import {
+  SAMPLE_AI_EMAIL_WORKFLOW,
+  SAMPLE_AI_EMAIL_WORKFLOW_NAME,
   SAMPLE_EMAIL_WORKFLOW,
   SAMPLE_EMAIL_WORKFLOW_NAME,
   SAMPLE_WORKFLOW,
@@ -47,9 +49,15 @@ export default function WorkflowLibraryPage() {
 
   // Creates, publishes, and activates the sample so a run and an approval can be tried right away.
   const loadSample = useMutation({
-    mutationFn: async (kind: "sales" | "email") => {
+    mutationFn: async (kind: "sales" | "email" | "ai") => {
       const sample =
-        kind === "email"
+        kind === "ai"
+          ? {
+              name: SAMPLE_AI_EMAIL_WORKFLOW_NAME,
+              description: "AI reads order emails written in any style. Unclear or large orders wait for a person.",
+              definition: SAMPLE_AI_EMAIL_WORKFLOW,
+            }
+          : kind === "email"
           ? {
               name: SAMPLE_EMAIL_WORKFLOW_NAME,
               description: "Orders that arrive by email. Above ₹50,000 they wait for a manager.",
@@ -109,7 +117,7 @@ export default function WorkflowLibraryPage() {
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium">Try a sample order workflow</p>
             <p className="text-[12px] text-muted">
-              Orders above ₹50,000 pause for a manager&apos;s approval. The email version starts from order emails.
+              Orders above ₹50,000 pause for a manager&apos;s approval. The email versions start from order emails; the AI version understands emails written in any style.
               {canPublish ? " Samples are published and activated for you." : " Samples are saved as drafts for an admin to publish."}
             </p>
           </div>
@@ -118,6 +126,9 @@ export default function WorkflowLibraryPage() {
           </Button>
           <Button variant="secondary" onClick={() => loadSample.mutate("email")} loading={loadSample.isPending && loadSample.variables === "email"}>
             Load email order sample
+          </Button>
+          <Button onClick={() => loadSample.mutate("ai")} loading={loadSample.isPending && loadSample.variables === "ai"}>
+            Load AI email order sample
           </Button>
         </div>
       )}

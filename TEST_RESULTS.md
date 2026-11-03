@@ -1,5 +1,12 @@
 # Hermes AI — Test Results
 
+## 2026-11-03: AI order reading
+- Backend: **232 passed** (full suite, including 24 new AI tests against a simulated provider). `ruff check` and `ruff format --check` clean.
+- AI tests cover: free-form email to structured order, amounts written as text ("₹1,200"), totals computed by code and mismatches flagged, low confidence and missing totals routed to a person, extra keys from the model dropped and unable to skip approval, the email unable to break out of its fence, invalid and off-schema replies failing the run, JSON-mode fallback, retry on rate limits, rejected key, missing key, missing text, input cap, per-organization hourly limit, mailbox to AI end to end, status endpoint never revealing the key.
+- Browser: `e2e/email.spec.ts` **2 passed**, including the new AI sample test (production build). The full browser suite was not rerun for this change.
+- **Not tested against a live AI model.**
+
+
 Date: 2026-11-02. Environment: Windows 11, Python 3.14 venv at `backend/.venv`.
 
 ## Automated tests
