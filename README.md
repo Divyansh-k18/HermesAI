@@ -133,7 +133,7 @@ The AI step needs a key from an AI provider. Both options below have a free tier
    ```
    HERMES_AI_BASE_URL=https://api.groq.com/openai/v1
    HERMES_AI_API_KEY=paste-your-key-here
-   HERMES_AI_MODEL=llama-3.3-70b-versatile
+   HERMES_AI_MODEL=openai/gpt-oss-120b
    ```
 
 **Option B: Google AI Studio (Gemini)**
@@ -147,7 +147,7 @@ The AI step needs a key from an AI provider. Both options below have a free tier
    HERMES_AI_MODEL=gemini-2.5-flash
    ```
 
-Model names change over time. If a run fails with "model or URL not found", check the provider's model list and update `HERMES_AI_MODEL`. Free tiers may use your data to improve their models, so use made-up orders for demos, not real customer data.
+Model names change over time (Groq retired `llama-3.3-70b-versatile` in 2026). On 2026-11-03, `openai/gpt-oss-120b` and `qwen/qwen3.8-27b` read the test orders correctly. If a run fails with "model or URL not found", check the provider's model list and update `HERMES_AI_MODEL`. Free tiers may use your data to improve their models, so use made-up orders for demos, not real customer data.
 
 **Then:**
 

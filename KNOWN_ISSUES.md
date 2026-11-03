@@ -92,7 +92,7 @@ On a machine where another program already uses port 8000, the Hermes API cannot
 
 ## AI order reading
 
-1. **Not yet tested against a live model.** All tests use a simulated provider that returns scripted replies, including bad ones. The first run with a real key is the real test. Try it before presenting.
+1. **Checked live against only a few emails.** On 2026-11-03, Groq's `openai/gpt-oss-120b` and `qwen/qwen3.8-27b` read a clear order, a vague one, and a prompt-injection attempt correctly (the attempt was ignored and went to a person). The automated tests use a simulated provider. Larger accuracy testing has not been done.
 2. **Free tiers have rate limits.** If the provider refuses with a rate limit, Hermes retries once, then the run fails with a clear message. Wait a minute and run again.
 3. **The AI can misread an email.** That is why the sample sends low-confidence, missing-total, and large orders to a person. Do not remove those checks.
 4. **Free tiers may use submitted data for training.** Use made-up orders for demos.

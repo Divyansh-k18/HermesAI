@@ -193,6 +193,19 @@ class ExtractedOrder(BaseModel):
     def _total(cls, value: Any) -> Any:
         return _number(value)
 
+    @field_validator("items", "missing_information", mode="before")
+    @classmethod
+    def _list_or_empty(cls, value: Any) -> Any:
+        # Smaller models write null or a single phrase where a list belongs. Both have one clear meaning.
+        if value is None or value == "":
+            return []
+        return [value] if isinstance(value, str) else value
+
+    @field_validator("summary", mode="before")
+    @classmethod
+    def _summary_text(cls, value: Any) -> Any:
+        return "" if value is None else value
+
     @field_validator("missing_information")
     @classmethod
     def _short_entries(cls, value: list[str]) -> list[str]:

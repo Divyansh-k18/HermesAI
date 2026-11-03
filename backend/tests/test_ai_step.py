@@ -372,3 +372,16 @@ def test_ai_step_validation():
     assert "invalid_config" in codes({"task": "extract_order", "result_path": "not a path"})
     assert "invalid_config" in codes({"task": "extract_order", "input_path": "../etc"})
     assert "missing_config" in codes({})
+
+
+def test_null_or_single_phrase_lists_from_smaller_models_are_accepted(owner, org, flow, provider):
+    provider["replies"].append(
+        model_reply({**GOOD_ORDER, "missing_information": None, "summary": None, "items": None, "total_amount": None})
+    )
+    body = start(owner, org, flow)
+    order = body["variables"]["order"]
+    assert order["missing_information"] == [] and order["items"] == [] and order["summary"] == ""
+    assert body["steps"][-1]["node_id"] == "review"  # no total, so a person checks it
+
+    provider["replies"].append(model_reply({**GOOD_ORDER, "missing_information": "price per box"}))
+    assert start(owner, org, flow)["variables"]["order"]["missing_information"] == ["price per box"]
