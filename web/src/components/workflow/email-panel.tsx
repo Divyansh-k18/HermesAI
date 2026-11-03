@@ -25,7 +25,16 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement> & { label:
 }
 
 /** Connect a mailbox so each new email starts a run. Shown to owners and admins in the builder. */
-export function EmailInboxPanel({ orgId, workflowId }: { orgId: string; workflowId: string }) {
+export function EmailInboxPanel({
+  orgId,
+  workflowId,
+  readsWithAI = false,
+}: {
+  orgId: string;
+  workflowId: string;
+  /** The workflow has an AI step, so customers can write orders in their own words. */
+  readsWithAI?: boolean;
+}) {
   const queryClient = useQueryClient();
   const info = useQuery({
     queryKey: ["email-inbox", orgId, workflowId],
@@ -101,10 +110,17 @@ export function EmailInboxPanel({ orgId, workflowId }: { orgId: string; workflow
 
       {!connected && !editing && (
         <div className="flex flex-col gap-2">
-          <p className="text-[12px] text-muted">
-            Connect a mailbox and every new email starts this workflow. Order details are read from lines like{" "}
-            <code className="font-mono text-text">Total: 75,000</code>.
-          </p>
+          {readsWithAI ? (
+            <p className="text-[12px] text-muted">
+              Connect a mailbox and every new email starts this workflow. The AI step reads each email, written in the
+              customer&apos;s own words.
+            </p>
+          ) : (
+            <p className="text-[12px] text-muted">
+              Connect a mailbox and every new email starts this workflow. Order details are read from lines like{" "}
+              <code className="font-mono text-text">Total: 75,000</code>.
+            </p>
+          )}
           <Button variant="secondary" className="self-start" onClick={startEditing}>
             Connect mailbox
           </Button>

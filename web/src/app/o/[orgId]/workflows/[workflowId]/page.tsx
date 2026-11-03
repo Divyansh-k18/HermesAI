@@ -869,7 +869,13 @@ function Builder({ orgId, workflowId, role, detail, onReload, onMetaChanged }: B
                 </p>
               </section>
 
-              {canPublish && <EmailInboxPanel orgId={orgId} workflowId={workflowId} />}
+              {canPublish && (
+                <EmailInboxPanel
+                  orgId={orgId}
+                  workflowId={workflowId}
+                  readsWithAI={graph.nodes.some((node) => node.data.kind === "ai_agent")}
+                />
+              )}
               {canPublish && <WebhookPanel orgId={orgId} workflowId={workflowId} />}
             </div>
           )}
