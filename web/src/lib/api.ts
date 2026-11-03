@@ -209,6 +209,9 @@ export interface RecentEmail {
   sender: string | null;
   subject: string | null;
   status: ExecutionStatus;
+  total: number | null;
+  stock: string | null;
+  outcome: string | null;
 }
 
 export interface InventoryItem {

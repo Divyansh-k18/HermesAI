@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { ApprovalPanel, Json } from "@/components/approval-panel";
 import { RunGraph } from "@/components/run-graph";
+import { OrderStory } from "@/components/order-story";
 import { Button, EmptyState, FormError, Skeleton } from "@/components/ui";
 import {
   ExecutionStatusBadge,
@@ -176,6 +177,8 @@ export default function ExecutionDetailPage() {
           )}
         </div>
       </header>
+
+      <OrderStory run={data} />
 
       {data.approvals.map((approval) => (
         <ApprovalPanel key={approval.id} orgId={orgId} approval={approval} onDecided={refresh} />

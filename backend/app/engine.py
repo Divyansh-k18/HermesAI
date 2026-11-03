@@ -79,7 +79,9 @@ def fill_placeholders(text: str, variables: dict[str, Any]) -> str:
         if not found or value is None:
             return "?"
         if isinstance(value, float) and value.is_integer():
-            value = int(value)  # 78000.0 reads as 78000
+            value = int(value)  # 78000.0 reads as 78,000
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            value = f"{value:,}"
         if isinstance(value, list):
             value = ", ".join(str(item) for item in value)
         return str(value)[:150]

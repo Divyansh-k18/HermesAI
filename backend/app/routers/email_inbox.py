@@ -18,7 +18,7 @@ from app.audit import record_audit
 from app.crypto import encrypt_secret
 from app.deps import OrgAccess, get_db, org_access, trace_id_of
 from app.http_client import OutboundError, ensure_public_host
-from app.models import EmailInbox, Workflow, WorkflowExecution
+from app.models import Approval, EmailInbox, StepExecution, Workflow, WorkflowExecution
 
 router = APIRouter(prefix="/api/v1/orgs/{org_id}/workflows/{workflow_id}/email-inbox", tags=["email"])
 
@@ -58,6 +58,29 @@ class RecentEmail(BaseModel):
     sender: str | None
     subject: str | None
     status: str
+    # What happened, in plain words: the order total, the stock check, and the decision so far.
+    total: float | None = None
+    stock: str | None = None
+    outcome: str | None = None
+
+
+def _outcome(db: Session, run: WorkflowExecution) -> str | None:
+    if run.status == "waiting_approval":
+        title = db.scalar(
+            select(Approval.title).where(Approval.execution_id == run.id, Approval.status == "pending").limit(1)
+        )
+        return f"Waiting: {title}" if title else "Waiting for approval"
+    if run.status == "failed":
+        return (run.error or "Failed")[:200]
+    last = db.scalar(
+        select(StepExecution)
+        .where(StepExecution.execution_id == run.id)
+        .order_by(StepExecution.sequence.desc())
+        .limit(1)
+    )
+    if run.status == "succeeded" and last is not None and last.node_type == "end":
+        return last.node_label or "Completed"
+    return None
 
 
 class InboxOut(BaseModel):
@@ -133,6 +156,10 @@ def get_inbox(
     ).all()
     for run in runs:
         email = (run.trigger_payload or {}).get("email") or {}
+        variables = run.variables or {}
+        order = variables.get("order") if isinstance(variables.get("order"), dict) else {}
+        stock = variables.get("stock") if isinstance(variables.get("stock"), dict) else {}
+        total = order.get("total")
         info.recent_emails.append(
             RecentEmail(
                 run_id=run.id,
@@ -140,6 +167,9 @@ def get_inbox(
                 sender=str(email.get("from") or "")[:320] or None,
                 subject=str(email.get("subject") or "")[:200] or None,
                 status=run.status,
+                total=total if isinstance(total, int | float) and not isinstance(total, bool) else None,
+                stock=str(stock["summary"])[:200] if stock.get("summary") else None,
+                outcome=_outcome(db, run),
             )
         )
     return info

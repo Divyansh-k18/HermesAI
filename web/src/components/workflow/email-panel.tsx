@@ -227,6 +227,18 @@ export function EmailInboxPanel({
                         <span className="block truncate text-[11px] text-faint">
                           {mail.sender ?? "unknown sender"} · {formatTime(mail.received_at)}
                         </span>
+                        {(mail.total !== null || mail.stock) && (
+                          <span className="block truncate text-[11px] text-muted">
+                            {mail.total !== null && `₹${mail.total.toLocaleString("en-IN")}`}
+                            {mail.total !== null && mail.stock && " · "}
+                            {mail.stock && (
+                              <span className={mail.stock === "All items in stock" ? "text-success" : "text-warning"}>
+                                {mail.stock}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {mail.outcome && <span className="block truncate text-[11px] text-text">{mail.outcome}</span>}
                       </span>
                       <ExecutionStatusBadge status={mail.status} />
                     </Link>

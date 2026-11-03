@@ -183,6 +183,7 @@ def test_the_mailbox_panel_lists_emails_that_started_runs(owner, org, monkeypatc
     assert len(recent) == 1
     assert recent[0]["sender"] == "asha@traders.example.com"
     assert recent[0]["status"] == "succeeded"
+    assert recent[0]["outcome"] == "e"  # the label of the End step it finished on (the test graph labels it "e")
 
 
 def test_sample_stock_fills_gaps_and_never_overwrites(owner, org, make_account):
@@ -222,3 +223,11 @@ def test_approval_titles_can_name_the_stock_problem(owner, org):
     run(owner, org["id"], wid, {"order": {"items": [{"name": "printer ink", "quantity": 2}], "who": "Asha"}})
     titles = [a["title"] for a in owner.get(f"/api/v1/orgs/{org['id']}/approvals").json()]
     assert titles == ["Stock problem: Printer Ink is out of stock (Asha)"]
+
+
+def test_placeholders_format_numbers_and_never_evaluate():
+    from app.engine import fill_placeholders
+
+    data = {"order": {"total": 78000.0, "customer_name": "Asha", "items": ["a", "b"]}}
+    assert fill_placeholders("₹{{order.total}} from {{ order.customer_name }}", data) == "₹78,000 from Asha"
+    assert fill_placeholders("{{order.items}} {{order.missing}} {{__class__}}", data) == "a, b ? ?"
