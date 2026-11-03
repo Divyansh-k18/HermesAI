@@ -12,6 +12,7 @@ Supported steps: trigger, condition, transformation, delay, approval, end. Steps
 external system or an AI model fail with a clear message, never silently.
 """
 
+import re
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
@@ -65,6 +66,25 @@ def lookup(variables: dict[str, Any], path: str) -> tuple[bool, Any]:
         else:
             return False, None
     return True, current
+
+
+_PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}")
+
+
+def fill_placeholders(text: str, variables: dict[str, Any]) -> str:
+    """Replace {{path}} with a value from the run's data. Only lookups: nothing in the text is evaluated."""
+
+    def value_of(match: re.Match) -> str:
+        found, value = lookup(variables, match.group(1))
+        if not found or value is None:
+            return "?"
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)  # 78000.0 reads as 78000
+        if isinstance(value, list):
+            value = ", ".join(str(item) for item in value)
+        return str(value)[:150]
+
+    return _PLACEHOLDER.sub(value_of, text)
 
 
 def assign(variables: dict[str, Any], path: str, value: Any) -> None:
@@ -312,7 +332,7 @@ def _run_node(
         return None, _run_stock_check(db, execution, config), None
 
     if kind == "approval":
-        title = str(config.get("title") or node.get("label") or "Approval needed")[:200]
+        title = fill_placeholders(str(config.get("title") or node.get("label") or "Approval needed"), variables)[:200]
         approval = Approval(
             organization_id=execution.organization_id,
             execution_id=execution.id,

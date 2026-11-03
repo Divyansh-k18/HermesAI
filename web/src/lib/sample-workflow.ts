@@ -105,8 +105,8 @@ export const SAMPLE_AI_EMAIL_WORKFLOW_NAME = "AI email order approval (sample)";
 
 /**
  * Customers write orders in their own words. The AI step reads the email into a structured order; plain rules
- * then decide. Unclear emails go to a person, items short in stock go to a person, large orders go to a manager,
- * and small clear orders finish.
+ * then decide. Unclear emails and stock problems go to a person, orders under ₹1,000 are approved automatically,
+ * and everything else waits for a manager.
  */
 export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
   nodes: [
@@ -147,25 +147,25 @@ export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
       config: { field: "stock.status", operator: "eq", value: "in_stock" },
     },
     {
-      id: "big",
+      id: "small",
       type: "condition",
-      label: "Order over ₹50,000?",
+      label: "Order under ₹1,000?",
       position: { x: 1680, y: -100 },
-      config: { field: "order.total", operator: "gt", value: 50000 },
+      config: { field: "order.total", operator: "lt", value: 1000 },
     },
     {
       id: "manager",
       type: "approval",
       label: "Manager approval",
       position: { x: 1960, y: -200 },
-      config: { approver_role: "admin", title: "Approve large order read by AI" },
+      config: { approver_role: "admin", title: "Approve ₹{{order.total}} order from {{order.customer_name}}" },
     },
     {
       id: "shortage",
       type: "approval",
       label: "Stock problem",
       position: { x: 1680, y: 120 },
-      config: { approver_role: "admin", title: "Some items are short: accept as backorder?" },
+      config: { approver_role: "admin", title: "Stock problem: {{stock.summary}}. Accept as backorder?" },
     },
     {
       id: "review",
@@ -176,7 +176,7 @@ export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
     },
     { id: "approved", type: "end", label: "Approved", position: { x: 2240, y: -260 }, config: {} },
     { id: "rejected", type: "end", label: "Rejected", position: { x: 2240, y: -130 }, config: {} },
-    { id: "auto", type: "end", label: "Auto-approved (small order)", position: { x: 1960, y: 0 }, config: {} },
+    { id: "auto", type: "end", label: "Auto-approved (under ₹1,000)", position: { x: 1960, y: 0 }, config: {} },
     { id: "backorder", type: "end", label: "Accepted as backorder", position: { x: 1960, y: 120 }, config: {} },
     { id: "nostock", type: "end", label: "Declined: no stock", position: { x: 1960, y: 240 }, config: {} },
     { id: "confirmed", type: "end", label: "Confirmed after review", position: { x: 1400, y: 280 }, config: {} },
@@ -190,10 +190,10 @@ export const SAMPLE_AI_EMAIL_WORKFLOW: WorkflowDefinition = {
     { id: "e5", source: "sure", target: "stock", source_handle: "true", label: "true" },
     { id: "e6", source: "sure", target: "review", source_handle: "false", label: "false" },
     { id: "e7", source: "stock", target: "available", source_handle: null, label: "" },
-    { id: "e8", source: "available", target: "big", source_handle: "true", label: "true" },
+    { id: "e8", source: "available", target: "small", source_handle: "true", label: "true" },
     { id: "e9", source: "available", target: "shortage", source_handle: "false", label: "false" },
-    { id: "e10", source: "big", target: "manager", source_handle: "true", label: "true" },
-    { id: "e11", source: "big", target: "auto", source_handle: "false", label: "false" },
+    { id: "e10", source: "small", target: "auto", source_handle: "true", label: "true" },
+    { id: "e11", source: "small", target: "manager", source_handle: "false", label: "false" },
     { id: "e12", source: "manager", target: "approved", source_handle: "approved", label: "approved" },
     { id: "e13", source: "manager", target: "rejected", source_handle: "rejected", label: "rejected" },
     { id: "e14", source: "shortage", target: "backorder", source_handle: "approved", label: "approved" },

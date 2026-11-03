@@ -155,7 +155,7 @@ Model names change over time (Groq retired `llama-3.3-70b-versatile` in 2026). O
 
 1. Stop the backend (Ctrl+C) and start it again with `python run.py`. Settings are read at start-up.
 2. In Hermes, open **Workflows** and click **Load AI email order sample**. Click the AI step: the right panel should say **AI on**.
-3. Click **Run**. The payload is pre-filled with an order written in plain English. Loading the sample also adds sample stock on the **Inventory** page if you have none, so the Check stock step has something to compare with. Change the email to ask for 500 boxes to see the stock problem path. Edit the text however you like, then run it.
+3. Click **Run**. The payload is pre-filled with an order written in plain English. Loading the sample also adds sample stock on the **Inventory** page if you have none, so the Check stock step has something to compare with. Orders under ₹1,000 are approved automatically; larger ones wait for a manager. Ask for printer ink (out of stock in the sample stock) or 500 boxes of paper to see the stock problem path, whose approval names the problem. Approval titles can include run data with `{{order.customer_name}}` or `{{stock.summary}}`. Edit the text however you like, then run it.
 4. Open the run. The AI step's output shows the order it read; a large, clear order waits for a manager, and a vague one waits for a person to check it.
 
 To take real emails, connect a mailbox to this workflow as described in **Taking orders by email** above. The AI reads each email body.

@@ -121,14 +121,16 @@ def test_an_order_in_stock_takes_the_in_stock_path(owner, org):
 @pytest.mark.parametrize(
     ("items", "status", "problem"),
     [
-        ([{"name": "A4 paper", "quantity": 500}], "short", "A4 paper: short"),
-        ([{"name": "Stapler", "quantity": 1}], "short", "Stapler: not stocked"),
-        ([{"name": "A4 paper", "quantity": None}], "needs_check", "A4 paper: quantity unknown"),
+        ([{"name": "A4 paper", "quantity": 500}], "short", "A4 Paper: only 200 of 500 available"),
+        ([{"name": "Stapler", "quantity": 1}], "short", "Stapler is not in the stock list"),
+        ([{"name": "printer ink", "quantity": 2}], "short", "Printer Ink is out of stock"),
+        ([{"name": "A4 paper", "quantity": None}], "needs_check", "A4 Paper: quantity not given"),
         ([], "needs_check", None),
     ],
 )
 def test_short_unknown_or_unclear_orders_never_count_as_in_stock(owner, org, items, status, problem):
     add_item(owner, org["id"], "A4 Paper", 200)
+    add_item(owner, org["id"], "Printer Ink", 0)
     wid = make_active_workflow(owner, org["id"], stock_graph())
     body = run(owner, org["id"], wid, {"order": {"items": items}}).json()
     stock = body["variables"]["stock"]
@@ -136,6 +138,7 @@ def test_short_unknown_or_unclear_orders_never_count_as_in_stock(owner, org, ite
     assert body["steps"][-1]["node_id"] == "no"
     if problem:
         assert problem in stock["problems"]
+        assert stock["summary"] == problem
 
 
 def test_a_missing_order_list_fails_the_step(owner, org):
@@ -194,3 +197,28 @@ def test_sample_stock_fills_gaps_and_never_overwrites(owner, org, make_account):
 
     member = add_member(owner, org["id"], make_account, "stock-sample-member@example.com", "member")
     assert member.post(f"{inv(org['id'])}/sample").status_code == 403
+
+
+def test_approval_titles_can_name_the_stock_problem(owner, org):
+    add_item(owner, org["id"], "Printer Ink", 0)
+    graph = stock_graph()
+    graph["nodes"][3:] = [
+        node(
+            "ask", "approval", {"approver_role": "admin", "title": "Stock problem: {{stock.summary}} ({{order.who}})"}
+        ),
+        node("yes", "end"),
+        node("ok", "end"),
+        node("no", "end"),
+    ]
+    graph["edges"] = [
+        edge("1", "t", "s"),
+        edge("2", "s", "c"),
+        edge("3", "c", "yes", "true"),
+        edge("4", "c", "ask", "false"),
+        edge("5", "ask", "ok", "approved"),
+        edge("6", "ask", "no", "rejected"),
+    ]
+    wid = make_active_workflow(owner, org["id"], graph)
+    run(owner, org["id"], wid, {"order": {"items": [{"name": "printer ink", "quantity": 2}], "who": "Asha"}})
+    titles = [a["title"] for a in owner.get(f"/api/v1/orgs/{org['id']}/approvals").json()]
+    assert titles == ["Stock problem: Printer Ink is out of stock (Asha)"]

@@ -230,7 +230,13 @@ export const NODE_META: Record<NodeKind, NodeMeta> = {
     ],
     fields: [
       { key: "approver_role", label: "Approver", kind: "select", options: opt("admin", "owner") },
-      { key: "title", label: "Request title", kind: "text", placeholder: "Approve order over ₹50,000" },
+      {
+        key: "title",
+        label: "Request title",
+        kind: "text",
+        placeholder: "Approve order over ₹50,000",
+        hint: "Insert run data with double braces, such as {{order.customer_name}} or {{stock.summary}}.",
+      },
     ],
   },
   delay: {

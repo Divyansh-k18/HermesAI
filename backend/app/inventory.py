@@ -97,6 +97,8 @@ def check_stock(db: Session, organization_id: str, lines: list[Any]) -> dict[str
         match = best_match(name, items) if name else None
         if match is None:
             state = "not_stocked"
+        elif match.quantity == 0:
+            state = "out_of_stock"
         elif requested is None:
             state = "quantity_unknown"
         elif match.quantity >= requested:
@@ -116,15 +118,29 @@ def check_stock(db: Session, organization_id: str, lines: list[Any]) -> dict[str
     all_available = bool(checked) and all(line["status"] == "available" for line in checked)
     if all_available:
         status = "in_stock"
-    elif any(line["status"] in {"short", "not_stocked"} for line in checked):
+    elif any(line["status"] in {"short", "not_stocked", "out_of_stock"} for line in checked):
         status = "short"
     else:
         status = "needs_check"
+    problems = [_describe(line) for line in checked if line["status"] != "available"]
     return {
         "status": status,
         "all_available": all_available,
         "lines": checked,
-        "problems": [
-            f"{line['item']}: {line['status'].replace('_', ' ')}" for line in checked if line["status"] != "available"
-        ],
+        "problems": problems,
+        # One sentence for people: approval titles can show it with {{stock.summary}}.
+        "summary": "; ".join(problems)
+        if problems
+        else ("All items in stock" if checked else "No items found in the order"),
     }
+
+
+def _describe(line: dict[str, Any]) -> str:
+    name, state = line["matched"] or line["item"], line["status"]
+    if state == "out_of_stock":
+        return f"{name} is out of stock"
+    if state == "short":
+        return f"{name}: only {line['available']} of {line['requested']:g} available"
+    if state == "not_stocked":
+        return f"{line['item']} is not in the stock list"
+    return f"{name}: quantity not given"
